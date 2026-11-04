@@ -120,6 +120,21 @@ legend{font-weight:700;color:var(--pri);padding:0 6px}
 .alerta b{flex:1;min-width:220px}
 .alerta input{width:70px;padding:4px 6px}
 .late{color:var(--bad);font-weight:600}
+.mxw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.mx{border-collapse:collapse;width:100%;min-width:560px}
+.mx th,.mx td{padding:0;border-bottom:1px solid var(--line);text-align:center;font-size:13px;position:static}
+.mx thead th{background:var(--pri2);padding:4px 2px}
+.mx th button,.mx td label{display:block;width:100%;border:0;background:none;border-radius:0;padding:7px 6px;font-size:13px;cursor:pointer;color:var(--ink)}
+.mx tbody th{text-align:left;width:70px}
+.mx tbody th button{font-weight:700;text-align:left}
+.mx thead th button{font-weight:600;line-height:1.2}
+.mx td input{width:18px;height:18px;cursor:pointer;accent-color:var(--pri);margin:0}
+.mx td input:disabled{cursor:not-allowed;opacity:.25}
+.mx tr.on th,.mx tr.on td{background:var(--pri2)}
+.mx th button:hover,.mx td label:hover{background:rgba(11,92,138,.12)}
+.mxsum{font-size:12px;color:var(--muted);margin-top:6px}
+.cmb{font-size:13px;line-height:1.35}
+.cmb b{font-weight:700}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
 #toast.show{opacity:1}
 #printArea{display:none}
@@ -273,7 +288,7 @@ const FIREBASE_CONFIG = {
         <thead><tr>
           <th data-k="distribuicao">Distribuição</th><th data-k="dataEntrada">Data Entrada</th><th data-k="nPedido">N.º Pedido</th>
           <th data-k="titular">Titular</th><th data-k="embarcacao">Embarcação</th><th data-k="cjId">Conj. Identificação</th><th data-k="pais">País</th>
-          <th>Áreas sol.</th><th>Artes sol.</th><th>Docs</th><th data-k="tempo">Tempo DRP</th><th data-k="decisao">Decisão</th>
+          <th>Solicitado (área: artes)</th><th>Docs</th><th data-k="tempo">Tempo DRP</th><th data-k="decisao">Decisão</th>
           <th data-k="dtEmissao">Dt. Emissão</th><th data-k="validade">Validade</th>
         </tr></thead>
         <tbody id="tb"></tbody>
@@ -320,10 +335,10 @@ const FIREBASE_CONFIG = {
    </fieldset>
 
    <fieldset><legend>Pedido</legend>
-    <div class="rowh">Áreas Solicitadas <button type="button" onclick="marcar('areasSol',true)">Todas</button><button type="button" onclick="marcar('areasSol',false)">Nenhuma</button><button type="button" onclick="verMapa()">🗺 Ver mapa</button></div>
-    <div class="chips" id="areasSol"></div>
-    <div class="rowh" style="margin-top:12px">Artes Solicitadas</div>
-    <div class="chips" id="artesSol"></div>
+    <div class="rowh">Áreas e artes solicitadas <button type="button" onclick="limparMx('mxSol')">Limpar</button><button type="button" onclick="verMapa()">🗺 Ver mapa</button></div>
+    <p class="small" style="margin:0 0 6px">Marque, em cada área, as artes pedidas. Clique no nome de uma área para marcar a linha toda, ou no nome de uma arte para a marcar em todas as áreas já escolhidas.</p>
+    <div class="mxw"><table class="mx" id="mxSol"></table></div>
+    <div class="mxsum" id="sumSol"></div>
    </fieldset>
 
    <fieldset><legend>Instrução</legend>
@@ -351,10 +366,10 @@ const FIREBASE_CONFIG = {
      <label class="f">Justificação do indeferimento<textarea name="justificacao"></textarea></label>
     </div>
     <div id="boxAut" class="hide" style="margin-top:12px">
-     <div class="rowh">Áreas Autorizadas <button type="button" onclick="copiarSol('areas')">= solicitadas</button><button type="button" onclick="marcar('areasAut',false)">Nenhuma</button></div>
-     <div class="chips" id="areasAut"></div>
-     <div class="rowh" style="margin-top:12px">Artes Autorizadas <button type="button" onclick="copiarSol('artes')">= solicitadas</button></div>
-     <div class="chips" id="artesAut"></div>
+     <div class="rowh">Áreas e artes autorizadas <button type="button" onclick="copiarSol()">= solicitadas</button><button type="button" onclick="limparMx('mxAut')">Limpar</button></div>
+     <p class="small" style="margin:0 0 6px">Só é possível autorizar combinações área/arte que foram solicitadas.</p>
+     <div class="mxw"><table class="mx" id="mxAut"></table></div>
+     <div class="mxsum" id="sumAut"></div>
     </div>
     <div class="grid" style="margin-top:12px">
      <label class="f">Dt. Emissão<input type="date" name="dtEmissao" oninput="autoValidade()"></label>
@@ -496,12 +511,46 @@ function chips(id,lista,cb){
 function getChk(id){return $$("#"+id+" input:checked").map(i=>i.value)}
 function setChk(id,vals){$$("#"+id+" input").forEach(i=>i.checked=(vals||[]).includes(i.value))}
 function marcar(id,v){$$("#"+id+" input:not(:disabled)").forEach(i=>i.checked=v);syncAut()}
-function copiarSol(t){if(t==="areas")setChk("areasAut",getChk("areasSol"));else setChk("artesAut",getChk("artesSol"));syncAut()}
+/* ---- matriz área × arte ---- */
+function construirMx(id){
+  $("#"+id).innerHTML=`<thead><tr><th>Área</th>${ARTES.map(t=>`<th><button type="button" onclick="toggleCol('${id}','${t}')">${esc(t)}</button></th>`).join("")}</tr></thead><tbody>${
+    AREAS.map(a=>`<tr data-a="${a}"><th><button type="button" onclick="toggleRow('${id}','${a}')">${a}</button></th>${ARTES.map(t=>`<td><label><input type="checkbox" data-a="${a}" data-t="${esc(t)}" onchange="mxChange('${id}')"></label></td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+function getMx(id){const m={};$$(`#${id} input:checked`).forEach(i=>{(m[i.dataset.a]=m[i.dataset.a]||[]).push(i.dataset.t)});
+  const o={};AREAS.forEach(a=>{if(m[a])o[a]=ARTES.filter(t=>m[a].includes(t))});return o}
+function setMx(id,map){$$(`#${id} input`).forEach(i=>i.checked=!!(map&&map[i.dataset.a]||[]).includes(i.dataset.t));mxChange(id,true)}
+function limparMx(id){setMx(id,{})}
+function toggleRow(id,a){const ins=$$(`#${id} input[data-a="${a}"]:not(:disabled)`),v=!ins.every(i=>i.checked);ins.forEach(i=>i.checked=v);mxChange(id)}
+function toggleCol(id,t){
+  // marca a arte nas áreas já escolhidas; se nenhuma área tiver nada marcado, marca a coluna toda
+  const linhas=$$(`#${id} tbody tr`).filter(tr=>tr.querySelector("input:checked"));
+  const alvo=(linhas.length?linhas:$$(`#${id} tbody tr`)).map(tr=>tr.querySelector(`input[data-t="${CSS.escape(t)}"]`)).filter(i=>!i.disabled);
+  const v=!alvo.every(i=>i.checked);alvo.forEach(i=>i.checked=v);mxChange(id);
+}
+function mxChange(id,semDup){
+  $$(`#${id} tbody tr`).forEach(tr=>tr.classList.toggle("on",!!tr.querySelector("input:checked")));
+  const m=getMx(id),na=Object.keys(m).length,nc=Object.values(m).reduce((s,x)=>s+x.length,0);
+  $(id==="mxSol"?"#sumSol":"#sumAut").textContent=na?`${na} área(s), ${nc} combinação(ões) área/arte`:"Nenhuma área marcada";
+  if(id==="mxSol")syncAut();
+  if(!semDup)atualizarDup();
+}
+function copiarSol(){setMx("mxAut",getMx("mxSol"))}
+// helpers do modelo de dados
+const resumoMap=m=>({areas:Object.keys(m),artes:ARTES.filter(t=>Object.values(m).some(x=>x.includes(t)))});
+function mapa(r,tipo){ // tipo: "sol" | "aut"; converte registos antigos (áreas × artes)
+  const m=r[tipo+"Map"];if(m)return m;
+  const A=r[tipo==="sol"?"areasSol":"areasAut"]||[],T=r[tipo==="sol"?"artesSol":"artesAut"]||[];
+  const o={};if(T.length)A.forEach(a=>o[a]=[...T]);return o;
+}
+const pares=m=>Object.entries(m).flatMap(([a,ts])=>ts.map(t=>a+"|"+t));
+const txtMap=(m,sep="; ")=>Object.entries(m).map(([a,ts])=>`${a}: ${ts.join(", ")}`).join(sep);
+const htmlMap=m=>Object.keys(m).length?`<div class="cmb">${Object.entries(m).map(([a,ts])=>`<b>${a}</b>: ${esc(ts.join(", "))}`).join("<br>")}</div>`:"";
 function syncAut(){
-  [["areasSol","areasAut"],["artesSol","artesAut"]].forEach(([s,a])=>{
-    const sol=getChk(s);
-    $$("#"+a+" input").forEach(i=>{const ok=sol.includes(i.value);i.disabled=!ok;if(!ok)i.checked=false;i.parentElement.classList.toggle("dis",!ok)});
-  });
+  const sol=getMx("mxSol");
+  $$("#mxAut input").forEach(i=>{const ok=(sol[i.dataset.a]||[]).includes(i.dataset.t);i.disabled=!ok;if(!ok)i.checked=false});
+  $$("#mxAut tbody tr").forEach(tr=>{tr.style.display=sol[tr.dataset.a]?"":"none";tr.classList.toggle("on",!!tr.querySelector("input:checked"))});
+  const m=getMx("mxAut"),na=Object.keys(m).length,nc=Object.values(m).reduce((s,x)=>s+x.length,0);
+  $("#sumAut").textContent=na?`${na} área(s), ${nc} combinação(ões) autorizadas`:"Nenhuma combinação autorizada";
 }
 function calcTempo(){
   const f=$("#frm"),d=dias(f.dtDRP.value,f.dtDRPM.value);
@@ -530,13 +579,13 @@ function duplicados(r,ignorarId){
     const mesmaEmb=(r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao))||(r.cjId&&normCod(o.cjId)===normCod(r.cjId));
     if(mesmaEmb&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
     if(mesmaEmb&&!grave&&ativo(o)){
-      const ar=(r.areasSol||[]).filter(a=>(o.areasSol||[]).includes(a)),at=(r.artesSol||[]).filter(a=>(o.artesSol||[]).includes(a));
-      if(ar.length&&at.length)m.push(`a embarcação já tem pedido ${o.decisao==="Autorizado"?"autorizado e válido":"pendente"} para a(s) área(s) ${ar.join(", ")} e arte(s) ${at.join(", ")}`);
+      const om=o.decisao==="Autorizado"?mapa(o,"aut"):mapa(o,"sol"),rm=mapa(r,"sol"),comum={};
+      Object.entries(rm).forEach(([a,ts])=>{const c=ts.filter(t=>(om[a]||[]).includes(t));if(c.length)comum[a]=c});
+      if(Object.keys(comum).length)m.push(`a embarcação já tem pedido ${o.decisao==="Autorizado"?"autorizado e válido":"pendente"} para ${txtMap(comum)}`);
     }
     if(!m.length&&r.titular&&(r.embarcacao||r.cjId)&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
-       JSON.stringify([...(o.areasSol||[])].sort())===JSON.stringify([...(r.areasSol||[])].sort())&&
-       JSON.stringify([...(o.artesSol||[])].sort())===JSON.stringify([...(r.artesSol||[])].sort())&&(r.areasSol||[]).length)
-      m.push("mesmo titular, embarcação, áreas e artes");
+       pares(mapa(r,"sol")).length&&pares(mapa(o,"sol")).sort().join()===pares(mapa(r,"sol")).sort().join())
+      m.push("mesmo titular, embarcação e as mesmas áreas/artes");
     if(m.length)out.push({rec:o,motivos:m,grave});
   });
   return out;
@@ -556,7 +605,7 @@ function dupSet(){
 function lerFormDup(){
   const f=$("#frm");
   return {distribuicao:f.distribuicao.value.trim(),nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
-    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,areasSol:getChk("areasSol"),artesSol:getChk("artesSol")};
+    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,solMap:getMx("mxSol")};
 }
 function atualizarDup(){
   if(!$("#modal").classList.contains("open"))return;
@@ -607,8 +656,7 @@ function preencher(r){
   if(!r.docs&&r.documentos){docs=["Outro"];f.docOutro.value=r.documentos} // registos antigos (texto livre)
   setChk("docs",docs);docsChange();
   f.decisao.value=r.decisao||"Pendente";
-  setChk("areasSol",r.areasSol);setChk("artesSol",r.artesSol);syncAut();
-  setChk("areasAut",r.areasAut);setChk("artesAut",r.artesAut);
+  setMx("mxSol",mapa(r,"sol"));setMx("mxAut",mapa(r,"aut"));
 }
 
 /* ================= ABRIR / GUARDAR ================= */
@@ -620,7 +668,7 @@ function abrir(id,base){
   ["bDel","bDup","bPrint"].forEach(b=>$("#"+b).classList.toggle("hide",!id));
   $("#bOf").classList.toggle("hide",!id||!r||!["Autorizado","Indeferido"].includes(r.decisao));
   if(r){preencher(r);if(id)editBase=r.alterado||0}
-  else{f.dataEntrada.value=hoje();f.decisao.value="Pendente";syncAut()}
+  else{f.dataEntrada.value=hoje();f.decisao.value="Pendente";setMx("mxSol",{});setMx("mxAut",{})}
   if(!id)f.distribuicao.value=proxDistrib();
   metaInfo(id?r:null);
   $("#dupBox").classList.add("hide");
@@ -659,13 +707,16 @@ function guardar(e){
     if(!cur&&!confirm("Este pedido foi apagado por outro utilizador. Voltar a criá-lo com estes dados?"))return;
     if(cur&&(cur.alterado||0)!==editBase&&!confirm(`${cur.alteradoPor||"Outro utilizador"} alterou este pedido depois de o abrir.\nGuardar e substituir as alterações dele?`))return;
   }
+  const solM=getMx("mxSol"),autM=dec==="Autorizado"?getMx("mxAut"):{};
+  if(dec==="Autorizado"&&!Object.keys(autM).length&&!confirm("Decisão Autorizado sem nenhuma área/arte autorizada. Guardar mesmo assim?"))return;
   const agora=Date.now(),ant=editId?dados.find(x=>x.id===editId):null;
   const r={
     distribuicao:dist,dataEntrada:f.dataEntrada.value,nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
-    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),pais:f.pais.value.trim(),areasSol:getChk("areasSol"),artesSol:getChk("artesSol"),
+    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),pais:f.pais.value.trim(),
     pareceres:f.pareceres.value,docs:getChk("docs"),docOutro:getChk("docs").includes("Outro")?f.docOutro.value.trim():"",documentos:"",dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value,
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
-    areasAut:dec==="Autorizado"?getChk("areasAut"):[],artesAut:dec==="Autorizado"?getChk("artesAut"):[],
+    solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
+    autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
     dtEmissao:f.dtEmissao.value,validade:f.validade.value,observacoes:f.observacoes.value,
     criado:ant?.criado||agora,criadoPor:ant?.criadoPor||sess.nome,alterado:agora,alteradoPor:sess.nome
   };
@@ -681,7 +732,7 @@ function apagar(){
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
   ["nPedido","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
-  r.decisao="Pendente";r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
+  r.decisao="Pendente";r.solMap=mapa(r,"sol");r.autMap={};r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
 
@@ -702,6 +753,14 @@ function nFiltros(F){
 }
 const contem=(txt,s)=>!s||String(txt||"").toLowerCase().includes(s.toLowerCase());
 function matchLista(lista,sel,modo){if(!sel.length)return true;lista=lista||[];return modo==="all"?sel.every(v=>lista.includes(v)):sel.some(v=>lista.includes(v))}
+// se houver áreas E artes escolhidas, exige que a arte esteja pedida NESSA área
+function matchMapa(m,A,mA,T,mT){
+  const areas=Object.keys(m),artes=[...new Set(Object.values(m).flat())];
+  if(!A.length||!T.length)return matchLista(areas,A,mA)&&matchLista(artes,T,mT);
+  const tem=(a,t)=>(m[a]||[]).includes(t);
+  const okA=a=>mT==="all"?T.every(t=>tem(a,t)):T.some(t=>tem(a,t));
+  return mA==="all"?A.every(okA):A.some(okA);
+}
 function filtrar(F){
   F=F||getFiltros();
   return dados.filter(r=>{
@@ -722,8 +781,8 @@ function filtrar(F){
     if(F.DC.length){const d=r.docs||[];
       if(F.mDC==="none"?F.DC.some(x=>d.includes(x)):!matchLista(d,F.DC,F.mDC))return false}
     if(F.por&&r.criadoPor!==F.por&&r.alteradoPor!==F.por)return false;
-    if(!matchLista(r.areasSol,F.AS,F.mAS)||!matchLista(r.artesSol,F.TS,F.mTS))return false;
-    if(!matchLista(r.areasAut,F.AA,F.mAA)||!matchLista(r.artesAut,F.TA,F.mTA))return false;
+    if(!matchMapa(mapa(r,"sol"),F.AS,F.mAS,F.TS,F.mTS))return false;
+    if(!matchMapa(mapa(r,"aut"),F.AA,F.mAA,F.TA,F.mTA))return false;
     return true;
   });
 }
@@ -778,9 +837,9 @@ function render(){
   const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
-    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc((r.areasSol||[]).join(", "))}</td><td>${esc((r.artesSol||[]).join(", "))}</td>
+    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}</td>
     <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
-    :`<tr><td colspan="14" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
+    :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
   $("#stats").innerHTML=statsHTML(lst);
   const par=dados.filter(parado),lim=limiteDRP(),al=$("#alertaDRP");
@@ -853,8 +912,9 @@ function renderCharts(){
   const P=porPeriodo(lst);
   const perCount=P.keys.map(k=>lst.filter(r=>(r.dataEntrada||"").startsWith(k)).length);
   const perTempo=P.keys.map(k=>{const t=lst.filter(r=>(r.dataEntrada||"").startsWith(k)).map(r=>dias(r.dtDRP,r.dtDRPM)).filter(x=>x!==null&&x>=0);return t.length?Math.round(t.reduce((a,b)=>a+b,0)/t.length):null});
-  const aS=contar(lst,"areasSol",AREAS),aA=contar(lst,"areasAut",AREAS);
-  const tS=contar(lst,"artesSol",ARTES),tA=contar(lst,"artesAut",ARTES);
+  const lstR=lst.map(r=>{const s=resumoMap(mapa(r,"sol")),a=resumoMap(mapa(r,"aut"));return {areasSol:s.areas,artesSol:s.artes,areasAut:a.areas,artesAut:a.artes}});
+  const aS=contar(lstR,"areasSol",AREAS),aA=contar(lstR,"areasAut",AREAS);
+  const tS=contar(lstR,"artesSol",ARTES),tA=contar(lstR,"artesAut",ARTES);
   const dec=["Pendente","Autorizado","Indeferido"].map(d=>lst.filter(r=>(r.decisao||"Pendente")===d).length);
   let paises=Object.entries(contar(lst,"pais")).sort((a,b)=>b[1]-a[1]);
   if(paises.length>10){const outros=paises.slice(9).reduce((s,x)=>s+x[1],0);paises=[...paises.slice(0,9),["Outros",outros]]}
@@ -948,12 +1008,12 @@ function imprimirListagem(){
   if(!lst.length){toast("Não há pedidos para imprimir");return}
   const j=a=>esc((a||[]).join(", "));
   const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
-    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${j(r.areasSol)}</td><td>${j(r.artesSol)}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
-    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}</td><td>${j(r.areasAut)}</td><td>${j(r.artesAut)}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
+    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc(txtMap(mapa(r,"sol")))}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
+    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("rampa-p — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
-   <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Áreas sol.</th><th>Artes sol.</th><th>Docs</th>
-   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Áreas aut.</th><th>Artes aut.</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table></div>`,true);
+   <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Solicitado (área: artes)</th><th>Docs</th>
+   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table></div>`,true);
 }
 function imprimirRelatorio(){
   if(!charts.length){toast("Os gráficos ainda não estão disponíveis");return}
@@ -994,9 +1054,10 @@ function gerarOficio(confirmar){
   let t=`Assunto: Pedido de autorização de pesca — ${r.embarcacao||r.titular||""}${r.cjId?" ("+r.cjId+")":""}\n\n`;
   t+=`Relativamente ao pedido de autorização de pesca${r.nPedido?" n.º "+r.nPedido:""}, entrado nestes serviços em ${fmt(r.dataEntrada)||"—"}, referente à embarcação ${emb}, informa-se V. Ex.ª de que o mesmo foi `;
   if(r.decisao==="Autorizado"){
-    t+=`AUTORIZADO, nas seguintes condições:\n\n• Áreas autorizadas: ${lst(r.areasAut)}\n• Artes autorizadas: ${lst(r.artesAut)}\n• Validade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}\n`;
-    const nA=(r.areasSol||[]).filter(a=>!(r.areasAut||[]).includes(a)),nT=(r.artesSol||[]).filter(a=>!(r.artesAut||[]).includes(a));
-    if(nA.length||nT.length)t+=`\nNão foram autorizadas${nA.length?" a(s) área(s) "+nA.join(", "):""}${nA.length&&nT.length?" nem":""}${nT.length?" a(s) arte(s) "+nT.join(", "):""}, igualmente solicitada(s).\n`;
+    const am=mapa(r,"aut"),sm=mapa(r,"sol"),nao={};
+    Object.entries(sm).forEach(([a,ts])=>{const f=ts.filter(t=>!(am[a]||[]).includes(t));if(f.length)nao[a]=f});
+    t+=`AUTORIZADO, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
+    if(Object.keys(nao).length)t+=`\nNão foi autorizado o seguinte, igualmente solicitado:\n${Object.entries(nao).map(([a,ts])=>`• Área ${a}: ${ts.join(", ")}`).join("\n")}\n`;
   }else{
     t+=`INDEFERIDO, com o seguinte fundamento:\n\n${r.justificacao||"—"}\n`;
   }
@@ -1014,22 +1075,22 @@ function imprimir(){
    <h1><img src="${$('header .logo').src}" alt="">rampa-p — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
    <h3>Identificação</h3><table>${row("Distribuição",esc(r.distribuicao))}${row("Data Entrada",fmt(r.dataEntrada))}${row("N.º Pedido",esc(r.nPedido))}
     ${row("Nome do Titular",esc(r.titular))}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
-   <h3>Pedido</h3><table>${row("Áreas Solicitadas",esc((r.areasSol||[]).join(", ")))}${row("Artes Solicitadas",esc((r.artesSol||[]).join(", ")))}</table>
+   <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n")).replace(/\n/g,"<br>"))}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
    <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
-    ${r.decisao==="Autorizado"?row("Áreas Autorizadas",esc((r.areasAut||[]).join(", ")))+row("Artes Autorizadas",esc((r.artesAut||[]).join(", "))):""}
+    ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n")).replace(/\n/g,"<br>")):""}
     ${row("Dt. Emissão",fmt(r.dtEmissao))}${row("Validade",fmt(r.validade))}</table>
    <h3>Observações</h3><table>${row("Observações",nl(r.observacoes))}</table></div>`;
   imprimirHTML($("#printArea").innerHTML,false);
 }
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,(r.areasSol||[]).join(", "),(r.artesSol||[]).join(", "),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,(r.areasAut||[]).join(", "),(r.artesAut||[]).join(", "),
+  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.join(", "),txtMap(mapa(r,"sol")),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.join(", "),txtMap(mapa(r,"aut")),
     fmt(r.dtEmissao),fmt(r.validade),r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`rampa-p_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
@@ -1059,7 +1120,7 @@ async function importJSON(inp){
 }
 
 /* ================= INÍCIO ================= */
-chips("areasSol",AREAS,"syncAut()");chips("artesSol",ARTES,"syncAut()");chips("areasAut",AREAS,"");chips("artesAut",ARTES,"");
+construirMx("mxSol");construirMx("mxAut");
 chips("docs",DOCS.map(d=>d[0]),"docsChange()");chips("fDC",DOCS.map(d=>d[0]),"render()");
 DOCS.forEach(([c,n])=>{$$(`#docs input[value="${c}"],#fDC input[value="${c}"]`).forEach(i=>i.parentElement.title=n)});
 DOCS.forEach(([c,n])=>{if(c!=="Outro")$(`#docs input[value="${c}"]`).nextElementSibling.textContent=`${c} — ${n}`});
