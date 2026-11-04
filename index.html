@@ -230,6 +230,7 @@ const FIREBASE_CONFIG = {
         <label class="f">N.º Pedido<input data-f="nPedido" oninput="render()"></label>
         <label class="f">Nome do Titular<input data-f="titular" oninput="render()"></label>
         <label class="f">Embarcação<input data-f="embarcacao" oninput="render()"></label>
+        <label class="f">Conjunto Identificação<input data-f="cjId" oninput="render()"></label>
         <label class="f">País<select data-f="pais" id="fPais" onchange="render()"></select></label>
         <label class="f">Decisão<select data-f="decisao" onchange="render()">
           <option value="">Todas</option><option>Pendente</option><option>Autorizado</option><option>Indeferido</option></select></label>
@@ -258,6 +259,9 @@ const FIREBASE_CONFIG = {
       <div class="chips" id="fAA"></div>
       <h4>Artes Autorizadas <select data-f="mTA" onchange="render()"><option value="any">contém alguma</option><option value="all">contém todas</option></select></h4>
       <div class="chips" id="fTA"></div>
+      <h4>Documentos apresentados <select data-f="mDC" onchange="render()"><option value="any">contém algum</option><option value="all">contém todos</option><option value="none">em falta</option></select>
+        <select data-f="docEst" onchange="render()"><option value="">Qualquer documentação</option><option value="completa">Completa (DUP+CN+TP)</option><option value="incompleta">Incompleta</option></select></h4>
+      <div class="chips" id="fDC"></div>
     </div>
   </div>
 
@@ -268,8 +272,8 @@ const FIREBASE_CONFIG = {
       <table>
         <thead><tr>
           <th data-k="distribuicao">Distribuição</th><th data-k="dataEntrada">Data Entrada</th><th data-k="nPedido">N.º Pedido</th>
-          <th data-k="titular">Titular</th><th data-k="embarcacao">Embarcação</th><th data-k="pais">País</th>
-          <th>Áreas sol.</th><th>Artes sol.</th><th data-k="tempo">Tempo DRP</th><th data-k="decisao">Decisão</th>
+          <th data-k="titular">Titular</th><th data-k="embarcacao">Embarcação</th><th data-k="cjId">Conj. Identificação</th><th data-k="pais">País</th>
+          <th>Áreas sol.</th><th>Artes sol.</th><th>Docs</th><th data-k="tempo">Tempo DRP</th><th data-k="decisao">Decisão</th>
           <th data-k="dtEmissao">Dt. Emissão</th><th data-k="validade">Validade</th>
         </tr></thead>
         <tbody id="tb"></tbody>
@@ -309,7 +313,8 @@ const FIREBASE_CONFIG = {
      <label class="f">Data Entrada<input type="date" name="dataEntrada"></label>
      <label class="f">N.º Pedido<input name="nPedido"></label>
      <label class="f">Nome do Titular<input name="titular" list="lTit"></label>
-     <label class="f">Embarcação<input name="embarcacao" list="lEmb"></label>
+     <label class="f">Embarcação<input name="embarcacao" list="lEmb" onchange="completarEmb('emb')"></label>
+     <label class="f">Conjunto Identificação<input name="cjId" list="lCj" placeholder="Ex.: H-1234-L" onchange="completarEmb('cj')"></label>
      <label class="f">País<input name="pais" list="lPais"></label>
     </div>
    </fieldset>
@@ -324,7 +329,12 @@ const FIREBASE_CONFIG = {
    <fieldset><legend>Instrução</legend>
     <div class="grid">
      <label class="f full">Pareceres<textarea name="pareceres"></textarea></label>
-     <label class="f full">Documentos<textarea name="documentos"></textarea></label>
+     <div class="full">
+      <div class="rowh">Documentos apresentados <button type="button" onclick="marcarDocs()">DUP + CN + TP</button></div>
+      <div class="chips" id="docs"></div>
+      <label class="f hide" id="boxOutro" style="margin-top:8px">Descrição do outro documento<input name="docOutro" placeholder="Ex.: Licença de pesca anterior"></label>
+      <span class="hint" id="docHint"></span>
+     </div>
      <label class="f">Dt. envio DRP<input type="date" name="dtDRP" oninput="calcTempo()"></label>
      <label class="f">Dt. envio DRPM<input type="date" name="dtDRPM" oninput="calcTempo()"></label>
      <label class="f">Tempo Exec. DRP<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
@@ -399,13 +409,15 @@ const FIREBASE_CONFIG = {
  </div>
 </div>
 
-<datalist id="lTit"></datalist><datalist id="lEmb"></datalist><datalist id="lPais"></datalist>
+<datalist id="lTit"></datalist><datalist id="lEmb"></datalist><datalist id="lCj"></datalist><datalist id="lPais"></datalist>
 <div id="printArea"></div>
 <style id="pgSt"></style>
 <div id="toast"></div>
 
 <script>
 const AREAS=["12-A","13-A","17","18","19","20","21","23","25","26","27","28","29","30"];
+const DOCS=[["DUP","Documento Único de Pesca"],["CN","Certificado de Navegabilidade"],["TP","Título de Propriedade/Livrete"],["Outro","Outro"]];
+const DOCS_OBR=["DUP","CN","TP"];
 const ARTES=["Fundo","Arte Cerco","Linha Mão","Palangre Superfície","Pesca Turísmo"];
 const PAISES=["Portugal","Espanha","França","Itália","Alemanha","Reino Unido","Irlanda","Países Baixos","Noruega","Estados Unidos","Canadá","Brasil","Cabo Verde","Marrocos","Japão","China","Taiwan","Coreia do Sul"];
 const COLECAO="pp_acessos"; // pp_acessos/{código}/pedidos/{id}
@@ -515,13 +527,13 @@ function duplicados(r,ignorarId){
     const m=[];let grave=false;
     if(r.distribuicao&&normCod(o.distribuicao)===normCod(r.distribuicao)){m.push("mesma Distribuição");grave=true}
     if(r.nPedido&&normCod(o.nPedido)===normCod(r.nPedido)){m.push("mesmo N.º de Pedido");grave=true}
-    const mesmaEmb=r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao);
+    const mesmaEmb=(r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao))||(r.cjId&&normCod(o.cjId)===normCod(r.cjId));
     if(mesmaEmb&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
     if(mesmaEmb&&!grave&&ativo(o)){
       const ar=(r.areasSol||[]).filter(a=>(o.areasSol||[]).includes(a)),at=(r.artesSol||[]).filter(a=>(o.artesSol||[]).includes(a));
       if(ar.length&&at.length)m.push(`a embarcação já tem pedido ${o.decisao==="Autorizado"?"autorizado e válido":"pendente"} para a(s) área(s) ${ar.join(", ")} e arte(s) ${at.join(", ")}`);
     }
-    if(!m.length&&r.titular&&r.embarcacao&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
+    if(!m.length&&r.titular&&(r.embarcacao||r.cjId)&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
        JSON.stringify([...(o.areasSol||[])].sort())===JSON.stringify([...(r.areasSol||[])].sort())&&
        JSON.stringify([...(o.artesSol||[])].sort())===JSON.stringify([...(r.artesSol||[])].sort())&&(r.areasSol||[]).length)
       m.push("mesmo titular, embarcação, áreas e artes");
@@ -536,20 +548,21 @@ function dupSet(){
   const s=new Set(),idx={};
   const add=(k,id)=>{if(!k)return;(idx[k]=idx[k]||[]).push(id)};
   dados.forEach(r=>{add("d|"+normCod(r.distribuicao),r.id);if(r.nPedido)add("n|"+normCod(r.nPedido),r.id);
-    if(r.embarcacao&&r.dataEntrada)add("e|"+norm(r.embarcacao)+"|"+r.dataEntrada,r.id)});
+    if(r.embarcacao&&r.dataEntrada)add("e|"+norm(r.embarcacao)+"|"+r.dataEntrada,r.id);
+    if(r.cjId&&r.dataEntrada)add("c|"+normCod(r.cjId)+"|"+r.dataEntrada,r.id)});
   Object.values(idx).forEach(ids=>{if(ids.length>1)ids.forEach(i=>s.add(i))});
   return _dupCache=s;
 }
 function lerFormDup(){
   const f=$("#frm");
   return {distribuicao:f.distribuicao.value.trim(),nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
-    embarcacao:f.embarcacao.value.trim(),dataEntrada:f.dataEntrada.value,areasSol:getChk("areasSol"),artesSol:getChk("artesSol")};
+    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,areasSol:getChk("areasSol"),artesSol:getChk("artesSol")};
 }
 function atualizarDup(){
   if(!$("#modal").classList.contains("open"))return;
   const d=duplicados(lerFormDup(),editId),box=$("#dupBox");
   if(!d.length){box.classList.add("hide");return}
-  box.innerHTML=`<b>⚠ Atenção: possível duplicação de informação</b><ul>${d.map(x=>`<li><strong>${esc(x.rec.distribuicao)}</strong> — ${esc(x.rec.titular||"sem titular")}${x.rec.embarcacao?" / "+esc(x.rec.embarcacao):""}: ${esc(x.motivos.join("; "))}<button type="button" onclick="abrirOutro('${x.rec.id}')">Abrir</button></li>`).join("")}</ul>`;
+  box.innerHTML=`<b>⚠ Atenção: possível duplicação de informação</b><ul>${d.map(x=>`<li><strong>${esc(x.rec.distribuicao)}</strong> — ${esc(x.rec.titular||"sem titular")}${x.rec.cjId?" ["+esc(x.rec.cjId)+"]":""}${x.rec.embarcacao?" / "+esc(x.rec.embarcacao):""}: ${esc(x.motivos.join("; "))}<button type="button" onclick="abrirOutro('${x.rec.id}')">Abrir</button></li>`).join("")}</ul>`;
   box.classList.remove("hide");
 }
 function abrirOutro(id){if(confirm("Abrir o outro pedido? As alterações não guardadas neste formulário perdem-se."))abrir(id)}
@@ -561,15 +574,38 @@ function setLimiteDRP(v){v=parseInt(v,10);if(v>0){ls("pp_limDRP",String(v));rend
 const diasNaDRP=r=>r.dtDRP&&!r.dtDRPM?dias(r.dtDRP,hoje()):null;
 const parado=r=>{const d=diasNaDRP(r);return d!==null&&d>limiteDRP()};
 function verParados(){limparFiltros();$('[data-f="sitDRP"]').value="parado";$("#adv").classList.remove("hide");tab("lista");render()}
+// ao escolher uma embarcação já conhecida, completa o conjunto de identificação (e vice-versa)
+function completarEmb(origem){
+  const f=$("#frm"),rec=[...dados].sort((a,b)=>(b.alterado||0)-(a.alterado||0)).find(r=>origem==="emb"
+    ?f.embarcacao.value&&norm(r.embarcacao)===norm(f.embarcacao.value)&&r.cjId
+    :f.cjId.value&&normCod(r.cjId)===normCod(f.cjId.value)&&r.embarcacao);
+  if(!rec)return;
+  if(origem==="emb"&&!f.cjId.value)f.cjId.value=rec.cjId;
+  if(origem==="cj"&&!f.embarcacao.value)f.embarcacao.value=rec.embarcacao;
+  if(!f.titular.value&&rec.titular)f.titular.value=rec.titular;
+  if(!f.pais.value&&rec.pais)f.pais.value=rec.pais;
+  atualizarDup();
+}
+function docsChange(){
+  const sel=getChk("docs");$("#boxOutro").classList.toggle("hide",!sel.includes("Outro"));
+  const falta=DOCS_OBR.filter(d=>!sel.includes(d));
+  $("#docHint").textContent=falta.length&&falta.length<3?"Em falta: "+falta.join(", "):"";
+}
+function marcarDocs(){setChk("docs",[...new Set([...getChk("docs"),...DOCS_OBR])]);docsChange()}
+const docsTxt=r=>(r.docs||[]).map(d=>d==="Outro"?(r.docOutro?"Outro: "+r.docOutro:"Outro"):d).join(", ");
+const docsCompleto=r=>DOCS_OBR.every(d=>(r.docs||[]).includes(d));
 function proxDistrib(){
   const ano=new Date().getFullYear();let pref="SGC0060",max=0;
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","pais","pareceres","documentos","dtDRP","dtDRPM","justificacao","dtEmissao","validade","observacoes"];
+const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
+  let docs=r.docs||[];
+  if(!r.docs&&r.documentos){docs=["Outro"];f.docOutro.value=r.documentos} // registos antigos (texto livre)
+  setChk("docs",docs);docsChange();
   f.decisao.value=r.decisao||"Pendente";
   setChk("areasSol",r.areasSol);setChk("artesSol",r.artesSol);syncAut();
   setChk("areasAut",r.areasAut);setChk("artesAut",r.artesAut);
@@ -588,7 +624,7 @@ function abrir(id,base){
   if(!id)f.distribuicao.value=proxDistrib();
   metaInfo(id?r:null);
   $("#dupBox").classList.add("hide");
-  calcTempo();toggleDec();syncAut();
+  calcTempo();toggleDec();syncAut();docsChange();
   $("#modal").classList.add("open");atualizarDup();
   if(!$("#dupBox").classList.contains("hide"))toast("⚠ Este pedido tem possível duplicação de informação");
 }
@@ -626,8 +662,8 @@ function guardar(e){
   const agora=Date.now(),ant=editId?dados.find(x=>x.id===editId):null;
   const r={
     distribuicao:dist,dataEntrada:f.dataEntrada.value,nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
-    embarcacao:f.embarcacao.value.trim(),pais:f.pais.value.trim(),areasSol:getChk("areasSol"),artesSol:getChk("artesSol"),
-    pareceres:f.pareceres.value,documentos:f.documentos.value,dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value,
+    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),pais:f.pais.value.trim(),areasSol:getChk("areasSol"),artesSol:getChk("artesSol"),
+    pareceres:f.pareceres.value,docs:getChk("docs"),docOutro:getChk("docs").includes("Outro")?f.docOutro.value.trim():"",documentos:"",dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value,
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     areasAut:dec==="Autorizado"?getChk("areasAut"):[],artesAut:dec==="Autorizado"?getChk("artesAut"):[],
     dtEmissao:f.dtEmissao.value,validade:f.validade.value,observacoes:f.observacoes.value,
@@ -644,7 +680,7 @@ function apagar(){
 }
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
-  ["nPedido","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","observacoes"].forEach(k=>r[k]="");
+  ["nPedido","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
   r.decisao="Pendente";r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
@@ -657,20 +693,20 @@ function estadoValidade(r){
 function getFiltros(){
   const o={q:$("#q").value.toLowerCase().trim()};
   $$("[data-f]").forEach(e=>o[e.dataset.f]=e.value.trim());
-  o.AS=getChk("fAS");o.TS=getChk("fTS");o.AA=getChk("fAA");o.TA=getChk("fTA");
+  o.DC=getChk("fDC");o.AS=getChk("fAS");o.TS=getChk("fTS");o.AA=getChk("fAA");o.TA=getChk("fTA");
   return o;
 }
 function nFiltros(F){
-  let n=0;["distribuicao","nPedido","titular","embarcacao","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup"].forEach(k=>{if(F[k])n++});
-  return n+["AS","TS","AA","TA"].filter(k=>F[k].length).length;
+  let n=0;["distribuicao","nPedido","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst"].forEach(k=>{if(F[k])n++});
+  return n+["AS","TS","AA","TA","DC"].filter(k=>F[k].length).length;
 }
 const contem=(txt,s)=>!s||String(txt||"").toLowerCase().includes(s.toLowerCase());
 function matchLista(lista,sel,modo){if(!sel.length)return true;lista=lista||[];return modo==="all"?sel.every(v=>lista.includes(v)):sel.some(v=>lista.includes(v))}
 function filtrar(F){
   F=F||getFiltros();
   return dados.filter(r=>{
-    if(F.q&&![r.distribuicao,r.nPedido,r.titular,r.embarcacao,r.pais,r.observacoes,r.pareceres,r.documentos].join(" ").toLowerCase().includes(F.q))return false;
-    if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao))return false;
+    if(F.q&&![r.distribuicao,r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
+    if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao)||!contem(r.cjId,F.cjId))return false;
     if(F.pais&&(r.pais||"")!==F.pais)return false;
     if(F.decisao&&(r.decisao||"Pendente")!==F.decisao)return false;
     if(F.sitDRP==="nao"&&r.dtDRP)return false;
@@ -681,6 +717,10 @@ function filtrar(F){
     if(F.tMin!==""||F.tMax!==""){const t=dias(r.dtDRP,r.dtDRPM);if(t===null)return false;if(F.tMin!==""&&t<+F.tMin)return false;if(F.tMax!==""&&t>+F.tMax)return false}
     if(F.dDe||F.dAte){const d=r[F.dCampo];if(!d)return false;if(F.dDe&&d<F.dDe)return false;if(F.dAte&&d>F.dAte)return false}
     if(F.dup&&!dupSet().has(r.id))return false;
+    if(F.docEst==="completa"&&!docsCompleto(r))return false;
+    if(F.docEst==="incompleta"&&docsCompleto(r))return false;
+    if(F.DC.length){const d=r.docs||[];
+      if(F.mDC==="none"?F.DC.some(x=>d.includes(x)):!matchLista(d,F.DC,F.mDC))return false}
     if(F.por&&r.criadoPor!==F.por&&r.alteradoPor!==F.por)return false;
     if(!matchLista(r.areasSol,F.AS,F.mAS)||!matchLista(r.artesSol,F.TS,F.mTS))return false;
     if(!matchLista(r.areasAut,F.AA,F.mAA)||!matchLista(r.artesAut,F.TA,F.mTA))return false;
@@ -692,7 +732,7 @@ function toggleAdv(){$("#adv").classList.toggle("hide")}
 function limparFiltros(){
   $("#q").value="";
   $$("[data-f]").forEach(e=>{e.value=e.tagName==="SELECT"?e.options[0].value:""});
-  ["fAS","fTS","fAA","fTA"].forEach(id=>setChk(id,[]));render();
+  ["fAS","fTS","fAA","fTA","fDC"].forEach(id=>setChk(id,[]));render();
 }
 // usado pelos cliques nos gráficos
 function aplicarFiltro(tipo,valor){
@@ -716,6 +756,7 @@ function render(){
   const uniq=k=>[...new Set(dados.map(r=>r[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt"));
   $("#lTit").innerHTML=uniq("titular").map(v=>`<option value="${esc(v)}">`).join("");
   $("#lEmb").innerHTML=uniq("embarcacao").map(v=>`<option value="${esc(v)}">`).join("");
+  $("#lCj").innerHTML=uniq("cjId").map(v=>`<option value="${esc(v)}">`).join("");
   $("#lPais").innerHTML=[...new Set([...PAISES,...uniq("pais")])].map(v=>`<option value="${esc(v)}">`).join("");
   const fillSel=(id,vals,todos)=>{const e=$(id),cur=e.value;e.innerHTML=`<option value="">${todos}</option>`+vals.map(v=>`<option ${v===cur?"selected":""}>${esc(v)}</option>`).join("")};
   fillSel("#fPais",uniq("pais"),"Todos");
@@ -737,9 +778,9 @@ function render(){
   const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
-    <td>${esc(r.embarcacao)}</td><td>${esc(r.pais)}</td><td>${esc((r.areasSol||[]).join(", "))}</td><td>${esc((r.artesSol||[]).join(", "))}</td>
-    <td>${tempoTxt(r)}</td><td>${tag(r.decisao)}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
-    :`<tr><td colspan="12" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
+    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc((r.areasSol||[]).join(", "))}</td><td>${esc((r.artesSol||[]).join(", "))}</td>
+    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
+    :`<tr><td colspan="14" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
   $("#stats").innerHTML=statsHTML(lst);
   const par=dados.filter(parado),lim=limiteDRP(),al=$("#alertaDRP");
@@ -751,6 +792,11 @@ function render(){
     al.classList.remove("hide");
   }else if(!par.length)al.classList.add("hide");
   if(!$("#graficos").classList.contains("hide"))renderCharts();
+}
+function docsCel(r){
+  if(!r.docs)return r.documentos?'<span class="small">texto</span>':"";
+  const d=r.docs,falta=DOCS_OBR.filter(x=>!d.includes(x));
+  return esc(d.join(", "))+(falta.length?` <span class="late" title="Em falta: ${falta.join(", ")}">⚠</span>`:"");
 }
 function statsHTML(lst){
   const ds=dupSet(),nd=lst.filter(r=>ds.has(r.id)).length;
@@ -880,11 +926,13 @@ function descreverFiltros(F){
   const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM"};
   const val={valido:"válidos",expira:"a expirar",expirado:"expirados"};
   if(F.q)d.push(`texto “${F.q}”`);
-  [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["titular","Titular"],["embarcacao","Embarcação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
+  [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["titular","Titular"],["embarcacao","Embarcação"],["cjId","Conj. Identificação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
   if(F.sitDRP)d.push("Situação: "+sit[F.sitDRP]);if(F.val)d.push("Validade: "+val[F.val]);
   if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias`);
   if(F.dDe||F.dAte)d.push(`${L[F.dCampo]}: ${F.dDe?fmt(F.dDe):"…"} a ${F.dAte?fmt(F.dAte):"…"}`);
   if(F.dup)d.push("só possíveis duplicados");
+  if(F.docEst)d.push("Documentação "+F.docEst);
+  if(F.DC.length)d.push(`Documentos (${F.mDC==="all"?"todos":F.mDC==="none"?"em falta":"algum"}): ${F.DC.join(", ")}`);
   [["AS","Áreas sol.","mAS"],["TS","Artes sol.","mTS"],["AA","Áreas aut.","mAA"],["TA","Artes aut.","mTA"]].forEach(([k,l,m])=>{if(F[k].length)d.push(`${l} (${F[m]==="all"?"todas":"alguma"}): ${F[k].join(", ")}`)});
   return d.length?d.join(" · "):"Sem filtros (todos os pedidos)";
 }
@@ -900,11 +948,11 @@ function imprimirListagem(){
   if(!lst.length){toast("Não há pedidos para imprimir");return}
   const j=a=>esc((a||[]).join(", "));
   const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
-    <td>${esc(r.embarcacao)}</td><td>${esc(r.pais)}</td><td>${j(r.areasSol)}</td><td>${j(r.artesSol)}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
+    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${j(r.areasSol)}</td><td>${j(r.artesSol)}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
     <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}</td><td>${j(r.areasAut)}</td><td>${j(r.artesAut)}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("rampa-p — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
-   <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>País</th><th>Áreas sol.</th><th>Artes sol.</th>
+   <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Áreas sol.</th><th>Artes sol.</th><th>Docs</th>
    <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Áreas aut.</th><th>Artes aut.</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table></div>`,true);
 }
 function imprimirRelatorio(){
@@ -942,8 +990,8 @@ function dataExtenso(d){if(!d)return"";const [a,m,dd]=d.split("-");
 function gerarOficio(confirmar){
   if(confirmar&&!confirm("Repor o texto original? As alterações feitas ao texto perdem-se."))return;
   const r=ofRec,lst=a=>(a||[]).join(", ")||"—";
-  const emb=`${r.embarcacao||"—"}${r.pais?" ("+r.pais+")":""}`;
-  let t=`Assunto: Pedido de autorização de pesca — ${r.embarcacao||r.titular||""}\n\n`;
+  const emb=`${r.embarcacao||"—"}${r.cjId?", conjunto de identificação "+r.cjId:""}${r.pais?" ("+r.pais+")":""}`;
+  let t=`Assunto: Pedido de autorização de pesca — ${r.embarcacao||r.titular||""}${r.cjId?" ("+r.cjId+")":""}\n\n`;
   t+=`Relativamente ao pedido de autorização de pesca${r.nPedido?" n.º "+r.nPedido:""}, entrado nestes serviços em ${fmt(r.dataEntrada)||"—"}, referente à embarcação ${emb}, informa-se V. Ex.ª de que o mesmo foi `;
   if(r.decisao==="Autorizado"){
     t+=`AUTORIZADO, nas seguintes condições:\n\n• Áreas autorizadas: ${lst(r.areasAut)}\n• Artes autorizadas: ${lst(r.artesAut)}\n• Validade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}\n`;
@@ -965,9 +1013,9 @@ function imprimir(){
   $("#printArea").innerHTML=`<div class="pf">
    <h1><img src="${$('header .logo').src}" alt="">rampa-p — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
    <h3>Identificação</h3><table>${row("Distribuição",esc(r.distribuicao))}${row("Data Entrada",fmt(r.dataEntrada))}${row("N.º Pedido",esc(r.nPedido))}
-    ${row("Nome do Titular",esc(r.titular))}${row("Embarcação",esc(r.embarcacao))}${row("País",esc(r.pais))}</table>
+    ${row("Nome do Titular",esc(r.titular))}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
    <h3>Pedido</h3><table>${row("Áreas Solicitadas",esc((r.areasSol||[]).join(", ")))}${row("Artes Solicitadas",esc((r.artesSol||[]).join(", ")))}</table>
-   <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",nl(r.documentos))}
+   <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
    <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
@@ -978,10 +1026,10 @@ function imprimir(){
 }
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","País","Áreas Solicitadas","Artes Solicitadas","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.pais,(r.areasSol||[]).join(", "),(r.artesSol||[]).join(", "),
-    r.pareceres,r.documentos,fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,(r.areasAut||[]).join(", "),(r.artesAut||[]).join(", "),
+  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,(r.areasSol||[]).join(", "),(r.artesSol||[]).join(", "),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,(r.areasAut||[]).join(", "),(r.artesAut||[]).join(", "),
     fmt(r.dtEmissao),fmt(r.validade),r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`rampa-p_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
@@ -1012,6 +1060,9 @@ async function importJSON(inp){
 
 /* ================= INÍCIO ================= */
 chips("areasSol",AREAS,"syncAut()");chips("artesSol",ARTES,"syncAut()");chips("areasAut",AREAS,"");chips("artesAut",ARTES,"");
+chips("docs",DOCS.map(d=>d[0]),"docsChange()");chips("fDC",DOCS.map(d=>d[0]),"render()");
+DOCS.forEach(([c,n])=>{$$(`#docs input[value="${c}"],#fDC input[value="${c}"]`).forEach(i=>i.parentElement.title=n)});
+DOCS.forEach(([c,n])=>{if(c!=="Outro")$(`#docs input[value="${c}"]`).nextElementSibling.textContent=`${c} — ${n}`});
 chips("fAS",AREAS,"render()");chips("fTS",ARTES,"render()");chips("fAA",AREAS,"render()");chips("fTA",ARTES,"render()");
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;
   for(const id of ["#mOf","#mMapa"]){if($(id).classList.contains("open")){$(id).classList.remove("open");return}}fechar()});
