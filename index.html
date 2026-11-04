@@ -295,6 +295,7 @@ const FIREBASE_CONFIG = {
       </table>
     </div>
     <p class="small" id="info"></p>
+    <p class="legenda small"></p>
   </section>
 
   <section id="graficos" class="hide">
@@ -334,22 +335,25 @@ const FIREBASE_CONFIG = {
     </div>
    </fieldset>
 
+   <fieldset><legend>Documentos apresentados</legend>
+    <div class="rowh"><button type="button" onclick="marcarDocs()">DUP + CN + TP</button></div>
+    <div class="chips" id="docs"></div>
+    <label class="f hide" id="boxOutro" style="margin-top:8px">Identificação do outro documento<input name="docOutro" placeholder="Ex.: Licença de pesca anterior"></label>
+    <span class="hint" id="docHint"></span>
+    <p class="small" style="margin:8px 0 0"><b>Legenda:</b> DUP: Documento Único de Pesca · CN: Certificado de Navegabilidade · TP: Título de Propriedade/Livrete · Outro: identificar o documento</p>
+   </fieldset>
+
    <fieldset><legend>Pedido</legend>
     <div class="rowh">Áreas e artes solicitadas <button type="button" onclick="limparMx('mxSol')">Limpar</button><button type="button" onclick="verMapa()">🗺 Ver mapa</button></div>
     <p class="small" style="margin:0 0 6px">Marque, em cada área, as artes pedidas. Clique no nome de uma área para marcar a linha toda, ou no nome de uma arte para a marcar em todas as áreas já escolhidas.</p>
     <div class="mxw"><table class="mx" id="mxSol"></table></div>
     <div class="mxsum" id="sumSol"></div>
+    <div class="legenda small"></div>
    </fieldset>
 
    <fieldset><legend>Instrução</legend>
     <div class="grid">
      <label class="f full">Pareceres<textarea name="pareceres"></textarea></label>
-     <div class="full">
-      <div class="rowh">Documentos apresentados <button type="button" onclick="marcarDocs()">DUP + CN + TP</button></div>
-      <div class="chips" id="docs"></div>
-      <label class="f hide" id="boxOutro" style="margin-top:8px">Descrição do outro documento<input name="docOutro" placeholder="Ex.: Licença de pesca anterior"></label>
-      <span class="hint" id="docHint"></span>
-     </div>
      <label class="f">Dt. envio DRP<input type="date" name="dtDRP" oninput="calcTempo()"></label>
      <label class="f">Dt. envio DRPM<input type="date" name="dtDRPM" oninput="calcTempo()"></label>
      <label class="f">Tempo Exec. DRP<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
@@ -370,6 +374,7 @@ const FIREBASE_CONFIG = {
      <p class="small" style="margin:0 0 6px">Só é possível autorizar combinações área/arte que foram solicitadas.</p>
      <div class="mxw"><table class="mx" id="mxAut"></table></div>
      <div class="mxsum" id="sumAut"></div>
+     <div class="legenda small"></div>
     </div>
     <div class="grid" style="margin-top:12px">
      <label class="f">Dt. Emissão<input type="date" name="dtEmissao" oninput="autoValidade()"></label>
@@ -433,7 +438,11 @@ const FIREBASE_CONFIG = {
 const AREAS=["12-A","13-A","17","18","19","20","21","23","25","26","27","28","29","30"];
 const DOCS=[["DUP","Documento Único de Pesca"],["CN","Certificado de Navegabilidade"],["TP","Título de Propriedade/Livrete"],["Outro","Outro"]];
 const DOCS_OBR=["DUP","CN","TP"];
-const ARTES=["Fundo","Arte Cerco","Linha Mão","Palangre Superfície","Pesca Turísmo"];
+const ARTES=["Fundo","Arte Cerco","Linha Mão","Palangre Superfície","Pesca Turísmo"]; // valores gravados (não alterar)
+const ART_ABR={"Fundo":"Fundo","Arte Cerco":"A Cerco","Linha Mão":"L Mão","Palangre Superfície":"Pl Sup","Pesca Turísmo":"P Tur"};
+const ART_NOME={"Fundo":"Fundo","Arte Cerco":"Arte de Cerco","Linha Mão":"Linha de Mão","Palangre Superfície":"Palangre de Superfície","Pesca Turísmo":"Pesca Turísmo"};
+const abr=t=>ART_ABR[t]||t, nomeArte=t=>ART_NOME[t]||t;
+const LEGENDA=ARTES.filter(t=>abr(t)!==nomeArte(t)).map(t=>`${abr(t)} – ${nomeArte(t)}`).join(" · ");
 const PAISES=["Portugal","Espanha","França","Itália","Alemanha","Reino Unido","Irlanda","Países Baixos","Noruega","Estados Unidos","Canadá","Brasil","Cabo Verde","Marrocos","Japão","China","Taiwan","Coreia do Sul"];
 const COLECAO="pp_acessos"; // pp_acessos/{código}/pedidos/{id}
 const MESES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -513,7 +522,7 @@ function setChk(id,vals){$$("#"+id+" input").forEach(i=>i.checked=(vals||[]).inc
 function marcar(id,v){$$("#"+id+" input:not(:disabled)").forEach(i=>i.checked=v);syncAut()}
 /* ---- matriz área × arte ---- */
 function construirMx(id){
-  $("#"+id).innerHTML=`<thead><tr><th>Área</th>${ARTES.map(t=>`<th><button type="button" onclick="toggleCol('${id}','${t}')">${esc(t)}</button></th>`).join("")}</tr></thead><tbody>${
+  $("#"+id).innerHTML=`<thead><tr><th>Área</th>${ARTES.map(t=>`<th><button type="button" title="${esc(nomeArte(t))}" onclick="toggleCol('${id}','${t}')">${esc(abr(t))}</button></th>`).join("")}</tr></thead><tbody>${
     AREAS.map(a=>`<tr data-a="${a}"><th><button type="button" onclick="toggleRow('${id}','${a}')">${a}</button></th>${ARTES.map(t=>`<td><label><input type="checkbox" data-a="${a}" data-t="${esc(t)}" onchange="mxChange('${id}')"></label></td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 function getMx(id){const m={};$$(`#${id} input:checked`).forEach(i=>{(m[i.dataset.a]=m[i.dataset.a]||[]).push(i.dataset.t)});
@@ -543,8 +552,8 @@ function mapa(r,tipo){ // tipo: "sol" | "aut"; converte registos antigos (áreas
   const o={};if(T.length)A.forEach(a=>o[a]=[...T]);return o;
 }
 const pares=m=>Object.entries(m).flatMap(([a,ts])=>ts.map(t=>a+"|"+t));
-const txtMap=(m,sep="; ")=>Object.entries(m).map(([a,ts])=>`${a}: ${ts.join(", ")}`).join(sep);
-const htmlMap=m=>Object.keys(m).length?`<div class="cmb">${Object.entries(m).map(([a,ts])=>`<b>${a}</b>: ${esc(ts.join(", "))}`).join("<br>")}</div>`:"";
+const txtMap=(m,sep="; ",f=abr)=>Object.entries(m).map(([a,ts])=>`${a}: ${ts.map(f).join(", ")}`).join(sep);
+const htmlMap=m=>Object.keys(m).length?`<div class="cmb">${Object.entries(m).map(([a,ts])=>`<b>${a}</b>: ${esc(ts.map(abr).join(", "))}`).join("<br>")}</div>`:"";
 function syncAut(){
   const sol=getMx("mxSol");
   $$("#mxAut input").forEach(i=>{const ok=(sol[i.dataset.a]||[]).includes(i.dataset.t);i.disabled=!ok;if(!ok)i.checked=false});
@@ -930,7 +939,7 @@ function renderCharts(){
     {id:"c3",tit:"Áreas: solicitadas vs autorizadas",sub:"N.º de pedidos",type:"bar",labels:AREAS,
       ds:[{label:"Solicitadas",data:AREAS.map(a=>aS[a]),color:S1},{label:"Autorizadas",data:AREAS.map(a=>aA[a]),color:S2}],
       click:(i,d)=>aplicarFiltro(d===0?"areaSol":"areaAut",AREAS[i])},
-    {id:"c4",tit:"Artes: solicitadas vs autorizadas",sub:"N.º de pedidos",type:"bar",horiz:true,labels:ARTES,
+    {id:"c4",tit:"Artes: solicitadas vs autorizadas",sub:"N.º de pedidos",type:"bar",horiz:true,labels:ARTES.map(nomeArte),
       ds:[{label:"Solicitadas",data:ARTES.map(a=>tS[a]),color:S1},{label:"Autorizadas",data:ARTES.map(a=>tA[a]),color:S2}],
       click:(i,d)=>aplicarFiltro(d===0?"arteSol":"arteAut",ARTES[i])},
     {id:"c5",tit:"Pedidos por país",sub:paises.length>=10?"10 principais":"N.º de pedidos",type:"bar",horiz:true,labels:paises.map(p=>p[0]),
@@ -1013,7 +1022,7 @@ function imprimirListagem(){
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("rampa-p — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
    <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Solicitado (área: artes)</th><th>Docs</th>
-   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table></div>`,true);
+   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table><p class="sub">Artes: ${esc(LEGENDA)}</p></div>`,true);
 }
 function imprimirRelatorio(){
   if(!charts.length){toast("Os gráficos ainda não estão disponíveis");return}
@@ -1056,8 +1065,8 @@ function gerarOficio(confirmar){
   if(r.decisao==="Autorizado"){
     const am=mapa(r,"aut"),sm=mapa(r,"sol"),nao={};
     Object.entries(sm).forEach(([a,ts])=>{const f=ts.filter(t=>!(am[a]||[]).includes(t));if(f.length)nao[a]=f});
-    t+=`AUTORIZADO, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
-    if(Object.keys(nao).length)t+=`\nNão foi autorizado o seguinte, igualmente solicitado:\n${Object.entries(nao).map(([a,ts])=>`• Área ${a}: ${ts.join(", ")}`).join("\n")}\n`;
+    t+=`AUTORIZADO, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
+    if(Object.keys(nao).length)t+=`\nNão foi autorizado o seguinte, igualmente solicitado:\n${Object.entries(nao).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")}\n`;
   }else{
     t+=`INDEFERIDO, com o seguinte fundamento:\n\n${r.justificacao||"—"}\n`;
   }
@@ -1075,12 +1084,12 @@ function imprimir(){
    <h1><img src="${$('header .logo').src}" alt="">rampa-p — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
    <h3>Identificação</h3><table>${row("Distribuição",esc(r.distribuicao))}${row("Data Entrada",fmt(r.dataEntrada))}${row("N.º Pedido",esc(r.nPedido))}
     ${row("Nome do Titular",esc(r.titular))}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
-   <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n")).replace(/\n/g,"<br>"))}</table>
+   <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
    <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
-    ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n")).replace(/\n/g,"<br>")):""}
+    ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
     ${row("Dt. Emissão",fmt(r.dtEmissao))}${row("Validade",fmt(r.validade))}</table>
    <h3>Observações</h3><table>${row("Observações",nl(r.observacoes))}</table></div>`;
   imprimirHTML($("#printArea").innerHTML,false);
@@ -1089,8 +1098,8 @@ function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
   const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.join(", "),txtMap(mapa(r,"sol")),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.join(", "),txtMap(mapa(r,"aut")),
+  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     fmt(r.dtEmissao),fmt(r.validade),r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`rampa-p_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
@@ -1123,8 +1132,9 @@ async function importJSON(inp){
 construirMx("mxSol");construirMx("mxAut");
 chips("docs",DOCS.map(d=>d[0]),"docsChange()");chips("fDC",DOCS.map(d=>d[0]),"render()");
 DOCS.forEach(([c,n])=>{$$(`#docs input[value="${c}"],#fDC input[value="${c}"]`).forEach(i=>i.parentElement.title=n)});
-DOCS.forEach(([c,n])=>{if(c!=="Outro")$(`#docs input[value="${c}"]`).nextElementSibling.textContent=`${c} — ${n}`});
 chips("fAS",AREAS,"render()");chips("fTS",ARTES,"render()");chips("fAA",AREAS,"render()");chips("fTA",ARTES,"render()");
+$$("#fTS input,#fTA input").forEach(i=>{i.nextElementSibling.textContent=abr(i.value);i.parentElement.title=nomeArte(i.value)});
+$$(".legenda").forEach(e=>e.innerHTML="<b>Legenda das artes:</b> "+esc(LEGENDA));
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;
   for(const id of ["#mOf","#mMapa"]){if($(id).classList.contains("open")){$(id).classList.remove("open");return}}fechar()});
 ["lgNome","lgCod"].forEach(id=>$("#"+id).addEventListener("keydown",e=>{if(e.key==="Enter")entrar()}));
