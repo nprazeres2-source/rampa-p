@@ -248,6 +248,7 @@ const FIREBASE_CONFIG = {
       <div class="grid">
         <label class="f">Distribuição<input data-f="distribuicao" oninput="render()"></label>
         <label class="f">N.º Pedido<input data-f="nPedido" oninput="render()"></label>
+        <label class="f">N.º Autorização<input data-f="nAut" oninput="render()"></label>
         <label class="f">Nome do Titular<input data-f="titular" oninput="render()"></label>
         <label class="f">Embarcação<input data-f="embarcacao" oninput="render()"></label>
         <label class="f">Conjunto Identificação<input data-f="cjId" oninput="render()"></label>
@@ -375,6 +376,7 @@ const FIREBASE_CONFIG = {
      <label class="f">Justificação do indeferimento<textarea name="justificacao"></textarea></label>
     </div>
     <div id="boxAut" class="hide" style="margin-top:12px">
+     <div class="grid" style="margin-bottom:12px"><label class="f">N.º de Autorização<input name="nAut" placeholder="Ex.: 123/2026" oninput="atualizarDup()"></label></div>
      <div class="rowh">Áreas e artes autorizadas <button type="button" onclick="copiarSol()">= solicitadas</button><button type="button" onclick="limparMx('mxAut')">Limpar</button></div>
      <p class="small" style="margin:0 0 6px">Só é possível autorizar combinações área/arte que foram solicitadas.</p>
      <div class="mxw"><table class="mx" id="mxAut"></table></div>
@@ -596,6 +598,7 @@ function duplicados(r,ignorarId){
     const m=[];let grave=false;
     if(r.distribuicao&&normCod(o.distribuicao)===normCod(r.distribuicao)){m.push("mesma Distribuição");grave=true}
     if(r.nPedido&&normCod(o.nPedido)===normCod(r.nPedido)){m.push("mesmo N.º de Pedido");grave=true}
+    if(r.nAut&&normCod(o.nAut)===normCod(r.nAut)){m.push("mesmo N.º de Autorização");grave=true}
     const mesmaEmb=(r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao))||(r.cjId&&normCod(o.cjId)===normCod(r.cjId));
     if(mesmaEmb&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
     if(mesmaEmb&&!grave&&ativo(o)){
@@ -616,7 +619,7 @@ function dupSet(){
   if(_dupCache)return _dupCache;
   const s=new Set(),idx={};
   const add=(k,id)=>{if(!k)return;(idx[k]=idx[k]||[]).push(id)};
-  dados.forEach(r=>{add("d|"+normCod(r.distribuicao),r.id);if(r.nPedido)add("n|"+normCod(r.nPedido),r.id);
+  dados.forEach(r=>{add("d|"+normCod(r.distribuicao),r.id);if(r.nPedido)add("n|"+normCod(r.nPedido),r.id);if(r.nAut)add("a|"+normCod(r.nAut),r.id);
     if(r.embarcacao&&r.dataEntrada)add("e|"+norm(r.embarcacao)+"|"+r.dataEntrada,r.id);
     if(r.cjId&&r.dataEntrada)add("c|"+normCod(r.cjId)+"|"+r.dataEntrada,r.id)});
   Object.values(idx).forEach(ids=>{if(ids.length>1)ids.forEach(i=>s.add(i))});
@@ -625,7 +628,8 @@ function dupSet(){
 function lerFormDup(){
   const f=$("#frm");
   return {distribuicao:f.distribuicao.value.trim(),nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
-    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,solMap:getMx("mxSol")};
+    embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,solMap:getMx("mxSol"),
+    nAut:f.decisao.value==="Autorizado"?f.nAut.value.trim():""};
 }
 function atualizarDup(){
   if(!$("#modal").classList.contains("open"))return;
@@ -668,7 +672,7 @@ function proxDistrib(){
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtEmissao","validade","observacoes"];
+const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -759,6 +763,7 @@ function guardar(e){
     if(!cur&&!confirm("Este pedido foi apagado por outro utilizador. Voltar a criá-lo com estes dados?"))return;
     if(cur&&(cur.alterado||0)!==editBase&&!confirm(`${cur.alteradoPor||"Outro utilizador"} alterou este pedido depois de o abrir.\nGuardar e substituir as alterações dele?`))return;
   }
+  if(dec==="Autorizado"&&!f.nAut.value.trim()&&!confirm("Pedido autorizado sem N.º de Autorização. Guardar mesmo assim?")){f.nAut.focus();return}
   const solM=getMx("mxSol"),autM=dec==="Autorizado"?getMx("mxAut"):{};
   if(dec==="Autorizado"&&!Object.keys(autM).length&&!confirm("Decisão Autorizado sem nenhuma área/arte autorizada. Guardar mesmo assim?"))return;
   const agora=Date.now(),ant=editId?dados.find(x=>x.id===editId):null;
@@ -769,7 +774,7 @@ function guardar(e){
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
     autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
-    dtEmissao:f.dtEmissao.value,validade:f.validade.value,observacoes:f.observacoes.value,
+    nAut:dec==="Autorizado"?f.nAut.value.trim():"",dtEmissao:f.dtEmissao.value,validade:f.validade.value,observacoes:f.observacoes.value,
     criado:ant?.criado||agora,criadoPor:ant?.criadoPor||sess.nome,alterado:agora,alteradoPor:sess.nome
   };
   const ref=editId?col.doc(editId):col.doc();
@@ -783,7 +788,7 @@ function apagar(){
 }
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
-  ["nPedido","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
+  ["nPedido","nAut","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
   r.decisao="Pendente";r.solMap=mapa(r,"sol");r.autMap={};r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
@@ -800,7 +805,7 @@ function getFiltros(){
   return o;
 }
 function nFiltros(F){
-  let n=0;["distribuicao","nPedido","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst"].forEach(k=>{if(F[k])n++});
+  let n=0;["distribuicao","nPedido","nAut","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst"].forEach(k=>{if(F[k])n++});
   return n+["AS","TS","AA","TA","DC"].filter(k=>F[k].length).length;
 }
 const contem=(txt,s)=>!s||String(txt||"").toLowerCase().includes(s.toLowerCase());
@@ -816,8 +821,8 @@ function matchMapa(m,A,mA,T,mT){
 function filtrar(F){
   F=F||getFiltros();
   return dados.filter(r=>{
-    if(F.q&&![r.distribuicao,r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
-    if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao)||!contem(r.cjId,F.cjId))return false;
+    if(F.q&&![r.distribuicao,r.nPedido,r.nAut,r.titular,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
+    if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.nAut,F.nAut)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao)||!contem(r.cjId,F.cjId))return false;
     if(F.pais&&(r.pais||"")!==F.pais)return false;
     if(F.decisao&&(r.decisao||"Pendente")!==F.decisao)return false;
     if(F.sitDRP==="nao"&&r.dtDRP)return false;
@@ -890,7 +895,7 @@ function render(){
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}</td>
-    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
+    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}</div>`:""}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
     :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
   $("#stats").innerHTML=statsHTML(lst);
@@ -1038,7 +1043,7 @@ function descreverFiltros(F){
   const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM"};
   const val={valido:"válidos",expira:"a expirar",expirado:"expirados"};
   if(F.q)d.push(`texto “${F.q}”`);
-  [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["titular","Titular"],["embarcacao","Embarcação"],["cjId","Conj. Identificação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
+  [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["nAut","N.º Autorização"],["titular","Titular"],["embarcacao","Embarcação"],["cjId","Conj. Identificação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
   if(F.sitDRP)d.push("Situação: "+sit[F.sitDRP]);if(F.val)d.push("Validade: "+val[F.val]);
   if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias`);
   if(F.dDe||F.dAte)d.push(`${L[F.dCampo]}: ${F.dDe?fmt(F.dDe):"…"} a ${F.dAte?fmt(F.dAte):"…"}`);
@@ -1061,7 +1066,7 @@ function imprimirListagem(){
   const j=a=>esc((a||[]).join(", "));
   const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc(txtMap(mapa(r,"sol")))}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
-    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
+    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("Rampa-P — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
    <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Solicitado (área: artes)</th><th>Docs</th>
@@ -1108,7 +1113,7 @@ function gerarOficio(confirmar){
   if(r.decisao==="Autorizado"){
     const am=mapa(r,"aut"),sm=mapa(r,"sol"),nao={};
     Object.entries(sm).forEach(([a,ts])=>{const f=ts.filter(t=>!(am[a]||[]).includes(t));if(f.length)nao[a]=f});
-    t+=`AUTORIZADO, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
+    t+=`AUTORIZADO${r.nAut?` (Autorização n.º ${r.nAut})`:""}, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
     if(Object.keys(nao).length)t+=`\nNão foi autorizado o seguinte, igualmente solicitado:\n${Object.entries(nao).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")}\n`;
   }else{
     t+=`INDEFERIDO, com o seguinte fundamento:\n\n${r.justificacao||"—"}\n`;
@@ -1130,7 +1135,7 @@ function imprimir(){
    <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
-   <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}
+   <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
     ${row("Dt. Emissão",fmt(r.dtEmissao))}${row("Validade",fmt(r.validade))}</table>
@@ -1139,10 +1144,10 @@ function imprimir(){
 }
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     fmt(r.dtEmissao),fmt(r.validade),r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
