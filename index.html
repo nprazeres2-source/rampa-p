@@ -431,6 +431,17 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     </div>
    </fieldset>
 
+   <fieldset><legend>Dados do requerente</legend>
+    <div class="grid">
+     <label class="f">Tipologia do requerente<select name="tipoReq"><option value=""></option><option>Particular (pessoa singular)</option><option>Pessoa coletiva</option></select></label>
+     <label class="f">NIF / NIPC<input name="nif" inputmode="numeric" oninput="validarNif()"><span class="hint" id="nifHint"></span></label>
+     <label class="f">Email<input name="email" type="email"></label>
+     <label class="f">Telefone<input name="telefone" type="tel"></label>
+     <label class="f full">Morada<input name="morada"></label>
+     <label class="f full">Representante (quando o pedido é feito em nome de outrem)<input name="representante"></label>
+    </div>
+   </fieldset>
+
    <fieldset><legend>Documentos apresentados</legend>
     <div class="rowh"><button type="button" onclick="marcarDocs()">DUP + CN + TP</button></div>
     <div class="chips" id="docs"></div>
@@ -925,6 +936,7 @@ function completarEmb(origem){
   if(origem==="cj"&&!f.embarcacao.value)f.embarcacao.value=rec.embarcacao;
   if(!f.titular.value&&rec.titular)f.titular.value=rec.titular;
   if(!f.pais.value&&rec.pais)f.pais.value=rec.pais;
+  if(norm(f.titular.value)===norm(rec.titular))["tipoReq","nif","morada","email","telefone","representante"].forEach(k=>{if(!f[k].value&&rec[k])f[k].value=rec[k]});
   atualizarDup();
 }
 function docsChange(){
@@ -935,12 +947,16 @@ function docsChange(){
 function marcarDocs(){setChk("docs",[...new Set([...getChk("docs"),...DOCS_OBR])]);docsChange()}
 const docsTxt=r=>(r.docs||[]).map(d=>d==="Outro"?(r.docOutro?"Outro: "+r.docOutro:"Outro"):d).join(", ");
 const docsCompleto=r=>DOCS_OBR.every(d=>(r.docs||[]).includes(d));
+// NIF/NIPC português: 9 dígitos com dígito de controlo
+function nifValido(n){n=String(n||"").replace(/\s/g,"");if(!/^\d{9}$/.test(n))return false;
+  let s=0;for(let i=0;i<8;i++)s+=(+n[i])*(9-i);const c=11-(s%11);return (c>=10?0:c)===+n[8]}
+function validarNif(){const v=$("#frm").nif.value.trim();$("#nifHint").textContent=v&&/^\d/.test(v)&&!nifValido(v)?"NIF/NIPC inválido (verifique os dígitos)":""}
 function proxDistrib(){
   const ano=new Date().getFullYear();let pref="SGC0060",max=0;
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtOficio","nAut","dtEmissao","validade","observacoes"];
+const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtOficio","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -966,7 +982,7 @@ function abrir(id,base){
   if(!id)f.distribuicao.value=proxDistrib();
   metaInfo(id?r:null);
   $("#dupBox").classList.add("hide");
-  calcTempo();toggleDec();syncAut();docsChange();
+  calcTempo();toggleDec();syncAut();docsChange();validarNif();
   $("#modal").classList.add("open");atualizarDup();
   if(!$("#dupBox").classList.contains("hide"))toast("⚠ Este pedido tem possível duplicação de informação");
 }
@@ -1040,6 +1056,7 @@ function guardar(e){
   const r={
     distribuicao:dist,dataEntrada:f.dataEntrada.value,nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
     embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),pais:f.pais.value.trim(),
+    tipoReq:f.tipoReq.value,nif:f.nif.value.replace(/\s/g,""),morada:f.morada.value.trim(),email:f.email.value.trim(),telefone:f.telefone.value.trim(),representante:f.representante.value.trim(),
     pareceres:f.pareceres.value,docs:getChk("docs"),docOutro:getChk("docs").includes("Outro")?f.docOutro.value.trim():"",documentos:"",dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value,
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
@@ -1093,7 +1110,7 @@ function matchMapa(m,A,mA,T,mT){
 function filtrar(F){
   F=F||getFiltros();
   return dados.filter(r=>{
-    if(F.q&&![r.distribuicao,r.nPedido,r.nAut,r.titular,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
+    if(F.q&&![r.distribuicao,r.nPedido,r.nAut,r.titular,r.nif,r.email,r.morada,r.representante,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
     if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.nAut,F.nAut)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao)||!contem(r.cjId,F.cjId))return false;
     if(F.pais&&(r.pais||"")!==F.pais)return false;
     if(F.decisao&&(r.decisao||"Pendente")!==F.decisao)return false;
@@ -1371,7 +1388,7 @@ function abrirOficio(){
   ofRec=dados.find(x=>x.id===editId);if(!ofRec)return;
   const c=ofCfg();
   $("#ofEnt").value=c.ent;$("#ofLocal").value=c.local;$("#ofCargo").value=c.cargo;$("#ofAss").value=c.ass;
-  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value="";$("#ofData").value=(ofRec.decisao==="Indeferido"?ofRec.dtOficio:ofRec.dtEmissao)||hoje();
+  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value=ofRec.morada||"";$("#ofData").value=(ofRec.decisao==="Indeferido"?ofRec.dtOficio:ofRec.dtEmissao)||hoje();
   $("#ofLogo").src=logoSrc();
   gerarOficio(false);$("#mOf").classList.add("open");
 }
@@ -1411,7 +1428,7 @@ function imprimir(){
   $("#printArea").innerHTML=`<div class="pf">
    <h1><img src="${$('header .logo').src}" alt="">Rampa-P — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
    <h3>Identificação</h3><table>${row("Distribuição",esc(r.distribuicao))}${row("Data Entrada",fmt(r.dataEntrada))}${row("N.º Pedido",esc(r.nPedido))}
-    ${row("Nome do Titular",esc(r.titular))}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
+    ${row("Nome do Titular",esc(r.titular))}${r.tipoReq?row("Tipologia",esc(r.tipoReq)):""}${row("NIF / NIPC",esc(r.nif))}${row("Morada",esc(r.morada))}${row("Email",esc(r.email))}${row("Telefone",esc(r.telefone))}${r.representante?row("Representante",esc(r.representante)):""}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
    <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
@@ -1431,7 +1448,7 @@ function carregarXLSX(){
     sc.onerror=()=>{_xlsxP=null;ko(new Error("Não foi possível carregar o leitor de Excel. Verifique a ligação à internet."))};document.head.appendChild(sc)}));
 }
 const COLS_X=[ // ordem das colunas no Excel exportado / modelo
- ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["embarcacao","Embarcação"],
+ ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["tipoReq","Tipologia do Requerente"],["nif","NIF"],["morada","Morada"],["email","Email"],["telefone","Telefone"],["representante","Representante"],["embarcacao","Embarcação"],
  ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["pareceres","Pareceres"],
  ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["nAut","N.º Autorização"],
  ["justificacao","Justificação Indeferimento"],["dtOficio","Dt. Ofício Indeferimento"],["autMap","Autorizado (área: artes)"],["dtEmissao","Dt Emissão"],["validade","Validade"],
@@ -1441,6 +1458,12 @@ const SINON={
  distribuicao:["distribuicao","distrib","n distribuicao","sgc"],
  dataEntrada:["data entrada","dt entrada","data de entrada","entrada"],
  nPedido:["n pedido","no pedido","numero pedido","numero do pedido","pedido","n do pedido"],
+ tipoReq:["tipologia do requerente","tipologia","tipo de requerente","tipo requerente"],
+ nif:["nif","nipc","nif nipc","numero de identificacao fiscal","n identificacao fiscal","contribuinte","n contribuinte"],
+ morada:["morada","endereco","sede","morada sede"],
+ email:["email","e mail","correio eletronico","correio electronico"],
+ telefone:["telefone","contato telefonico","contacto telefonico","telemovel","contacto","contato","tel"],
+ representante:["representante","nome do representante"],
  titular:["nome do titular","titular","nome titular","requerente","armador"],
  embarcacao:["embarcacao","nome embarcacao","nome da embarcacao","navio"],
  cjId:["conjunto identificacao","conjunto de identificacao","conj identificacao","conj ident","conj id","matricula"],
@@ -1523,12 +1546,14 @@ function interpretarExcel(aoa){
     const txt=k=>String(g(k)).trim();
     if(!L.some(c=>String(c??"").trim()))continue;
     const av=[],r={};
-    ["distribuicao","nPedido","titular","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
+    ["distribuicao","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
     ["dataEntrada","dtDRP","dtDRPM","dtEmissao","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
     if(mapa.solMap!==undefined&&txt("solMap"))r.solMap=mapaX(g("solMap"),av,"Solicitado");
     else if(mapa.areasSol!==undefined)r.solMap=mapaAreasArtes(g("areasSol"),g("artesSol"),av,"Solicitado");
     if(mapa.autMap!==undefined&&txt("autMap"))r.autMap=mapaX(g("autMap"),av,"Autorizado");
     else if(mapa.areasAut!==undefined)r.autMap=mapaAreasArtes(g("areasAut"),g("artesAut"),av,"Autorizado");
+    if(r.tipoReq){const t=nrm(r.tipoReq);r.tipoReq=/colet|empresa|sociedade/.test(t)?"Pessoa coletiva":/particular|singular/.test(t)?"Particular (pessoa singular)":r.tipoReq}
+    if(r.nif){r.nif=r.nif.replace(/\s/g,"");if(/^\d+$/.test(r.nif)&&!nifValido(r.nif))av.push(`NIF ${r.nif} inválido`)}
     if(mapa.documentos!==undefined){const d=docsX(g("documentos"));r.docs=d.docs;r.docOutro=d.docOutro}
     if(mapa.decisao!==undefined){const d=decisaoX(g("decisao"));if(d===null){av.push(`decisão “${txt("decisao")}” não reconhecida — fica Pendente`);r.decisao="Pendente"}else r.decisao=d}
     // coerência
@@ -1606,7 +1631,7 @@ async function confirmarImp(){
         doc={...x.ex};delete doc.id;
         Object.entries(x.r).forEach(([k,v])=>{const vazio=v===""||v==null||(Array.isArray(v)&&!v.length)||(typeof v==="object"&&!Array.isArray(v)&&!Object.keys(v).length);if(!vazio)doc[k]=v});
       }else{
-        doc={distribuicao:"",dataEntrada:"",nPedido:"",titular:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
+        doc={distribuicao:"",dataEntrada:"",nPedido:"",titular:"",tipoReq:"",nif:"",morada:"",email:"",telefone:"",representante:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
           decisao:"Pendente",justificacao:"",dtOficio:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
           criado:agora,criadoPor:sess.nome,criadoPorEmail:sess.email,apagado:false};
       }
@@ -1624,7 +1649,7 @@ async function confirmarImp(){
 
 function linhaExcel(r){
   const t=dias(r.dtDRP,r.dtDRPM);
-  return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
+  return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,tipoReq:r.tipoReq||"",nif:r.nif||"",morada:r.morada||"",email:r.email||"",telefone:r.telefone||"",representante:r.representante||"",embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
     documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
     tempo:t??"",decisao:r.decisao||"Pendente",nAut:r.nAut||"",justificacao:r.justificacao||"",dtOficio:r.decisao==="Indeferido"?fmt(r.dtOficio):"",autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
     dtEmissao:r.decisao==="Autorizado"?fmt(r.dtEmissao):"",validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
@@ -1644,7 +1669,7 @@ async function exportExcel(){
 }
 async function modeloExcel(){
   try{await carregarXLSX()}catch(e){alert(e.message);return}
-  const ex={distribuicao:"SGC0060/2026/0001",dataEntrada:"15/01/2026",nPedido:"123/2026",titular:"Nome do titular",embarcacao:"Mar Azul",cjId:"H-1234-L",pais:"Portugal",
+  const ex={distribuicao:"SGC0060/2026/0001",dataEntrada:"15/01/2026",nPedido:"123/2026",titular:"Nome do titular",tipoReq:"Particular (pessoa singular)",nif:"",morada:"Rua …, Horta",email:"titular@exemplo.pt",telefone:"912345678",representante:"",embarcacao:"Mar Azul",cjId:"H-1234-L",pais:"Portugal",
     documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",nAut:"45/2026",
     justificacao:"",dtOficio:"",autMap:"17: Fundo",dtEmissao:"10/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,folhaXLSX([ex]),"Pedidos");
@@ -1691,6 +1716,7 @@ function paresPdf(segs){
   });
   linhas.forEach(l=>l.t=l.t.replace(/\s+/g," ").trim());
   const L=linhas.filter(l=>l.lado==="L"&&l.t),V=linhas.filter(l=>l.lado==="V"&&l.t),out=[];
+  out.soltas=L.map(l=>l.t);
   V.sort((a,b)=>a.p-b.p||a.y-b.y).forEach(v=>{
     const lab=L.filter(l=>l.p===v.p&&Math.abs(l.y-v.y)<=11).sort((a,b)=>a.y-b.y).map(l=>l.t).join(" ");
     const prev=out[out.length-1];
@@ -1727,10 +1753,11 @@ function interpretarPdf(pares,ficheiro){
     else if(/conjunto de identificacao/.test(k)){r.cjId=val.replace(/\s+/g,"");usar("cjId")}
     else if(/denominacao|firma|designacao|razao social|nome da (empresa|entidade|sociedade)/.test(k)){denom=denom||val}
     else if(/^nome( do requerente| completo)?$/.test(k)){nome=nome||val}
-    else if(/fiscal|\bnif\b|\bnipc\b/.test(k))info.nif=val;
-    else if(/^morada|^sede/.test(k))info.morada=val;
-    else if(/^e ?mail/.test(k))info.email=val;
-    else if(/telef|telem/.test(k))info.tel=val;
+    else if(/fiscal|\bnif\b|\bnipc\b/.test(k)){r.nif=r.nif||val.replace(/\s/g,"");usar("nif")}
+    else if(/^morada|^sede/.test(k)){r.morada=r.morada||val;usar("morada")}
+    else if(/^e ?mail/.test(k)){r.email=r.email||val;usar("email")}
+    else if(/telef|telem|contacto|contato/.test(k)){r.telefone=r.telefone||val;usar("telefone")}
+    else if(/representante/.test(k)){r.representante=val;usar("representante")}
     else if(/titulo de propriedade|livrete/.test(k))addDoc("TP");
     else if(/documento de seguranca|navegabilidade/.test(k))addDoc("CN");
     else if(/documento unico de pesca|^dup$/.test(k))addDoc("DUP");
@@ -1746,15 +1773,17 @@ function interpretarPdf(pares,ficheiro){
     else if(/certificado|licenca|declaracao|documento|titulo|anexo/.test(k))outrosDocs.push(label);
   });
   r.titular=denom||nome;if(r.titular)usados.push("titular");
+  if(nome&&denom&&nome!==denom&&!r.representante){r.representante=nome;usados.push("representante")}
+  const tip=(pares.soltas||[]).map(nrm).find(t=>/pessoa (singular|coletiva)|^particular|^empresa/.test(t));
+  if(tip){r.tipoReq=/colet|empresa/.test(tip)?"Pessoa coletiva":"Particular (pessoa singular)";usados.push("tipoReq")}
+  else if(denom){r.tipoReq="Pessoa coletiva";usados.push("tipoReq")}
+  if(r.nif&&!nifValido(r.nif))av.push(`NIF/NIPC ${r.nif} parece inválido — confirme`);
   if(outrosDocs.length){addDoc("Outro");r.docOutro=outrosDocs.join("; ")}
   r.docs=DOCS.map(d=>d[0]).filter(d=>r.docs.includes(d));
   if(r.docs.length)usados.push("docs");
   if(r.cjId&&/^PT/i.test(r.cjId)){r.pais="Portugal";usados.push("pais")}
   if(Object.keys(r.solMap).length)usados.push("solMap");
   const obs=[`Importado do formulário PDF ${ficheiro}${r.nPedido?` (Ref. ${r.nPedido})`:""}.`];
-  const req=[info.nif&&"NIF "+info.nif,info.morada&&"Morada: "+info.morada,info.email&&"Email: "+info.email,info.tel&&"Tel.: "+info.tel].filter(Boolean);
-  if(nome&&denom&&nome!==denom)req.unshift("Representante: "+nome);
-  if(req.length)obs.push("Requerente — "+req.join("; ")+".");
   if(info.ini||info.fim)obs.push(`Período pedido: ${fmt(info.ini)||"—"} a ${fmt(info.fim)||"—"}.`);
   r.observacoes=obs.join("\n");
   ["nPedido","titular","embarcacao","cjId"].forEach(c=>{if(!r[c])av.push(`Campo não encontrado no PDF: ${{nPedido:"Referência",titular:"Nome do requerente",embarcacao:"Nome da embarcação",cjId:"Conjunto de identificação"}[c]}`)});
@@ -1775,7 +1804,7 @@ async function importarPdf(f){
     const ja=r.nPedido&&dados.find(x=>normCod(x.nPedido)===normCod(r.nPedido));
     if(ja&&!confirm(`Já existe um pedido com a Referência ${r.nPedido} (${ja.distribuicao}).\nCriar outro pedido a partir deste PDF?`))return;
     abrir(null,{...r,decisao:"Pendente"});
-    const campos={nPedido:"[name=nPedido]",dataEntrada:"[name=dataEntrada]",titular:"[name=titular]",embarcacao:"[name=embarcacao]",cjId:"[name=cjId]",pais:"[name=pais]",docs:"#docs",solMap:"#mxSol"};
+    const campos={tipoReq:"[name=tipoReq]",nif:"[name=nif]",morada:"[name=morada]",email:"[name=email]",telefone:"[name=telefone]",representante:"[name=representante]",nPedido:"[name=nPedido]",dataEntrada:"[name=dataEntrada]",titular:"[name=titular]",embarcacao:"[name=embarcacao]",cjId:"[name=cjId]",pais:"[name=pais]",docs:"#docs",solMap:"#mxSol"};
     usados.forEach(c=>campos[c]&&$(campos[c])&&$(campos[c]).classList.add("from-pdf"));
     $("[name=observacoes]").classList.add("from-pdf");
     $("#pdfBox").innerHTML=`<b>📄 Dados importados de ${esc(f.name)}</b> — os campos preenchidos a partir do PDF estão destacados. Confirme-os, indique a <b>Distribuição</b> e guarde.`+
@@ -1795,9 +1824,9 @@ async function importarPdf(f){
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
+  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
     r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     r.decisao==="Autorizado"?fmt(r.dtEmissao):"",r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
