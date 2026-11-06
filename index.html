@@ -164,6 +164,11 @@ body:not(.role-admin) .so-admin{display:none!important}
 .st{font-weight:700;white-space:nowrap}
 .drop{border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;cursor:pointer}
 .drop:hover,.drop.over{border-color:var(--pri);background:var(--pri2)}
+.pdfbox{background:var(--pri2);border:1px solid var(--pri);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.pdfbox b{color:var(--pri)}
+.pdfbox ul{margin:6px 0 0;padding-left:18px}
+.from-pdf{background:var(--warnbg)!important;border-color:var(--warn)!important}
+body.drag-pdf::after{content:"Largue o PDF para criar o pedido";position:fixed;inset:0;background:rgba(11,92,138,.75);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;z-index:30}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
 #toast.show{opacity:1}
 #printArea{display:none}
@@ -271,6 +276,8 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     <button class="b-new so-edit" onclick="abrir()">+ Novo pedido</button>
     <button onclick="exportExcel()">Exportar Excel</button>
     <button onclick="exportJSON()">Cópia de segurança</button>
+    <button class="so-edit" onclick="$('#fPdf').click()" title="Criar um pedido a partir do formulário PDF submetido">Importar PDF</button>
+    <input type="file" id="fPdf" accept=".pdf,application/pdf" class="hide" onchange="importarPdf(this.files[0]);this.value=''">
     <button class="so-edit" onclick="abrirImportExcel()">Importar Excel</button>
     <button class="so-edit" onclick="document.getElementById('fImp').click()" title="Repor a partir de uma cópia de segurança (JSON)">Repor cópia</button>
     <button onclick="sair()">Sair</button>
@@ -408,6 +415,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
  <div class="dlg">
   <div class="dlg-h"><h2 id="mTitle">Novo pedido</h2><button onclick="fechar()">✕</button></div>
   <form class="dlg-b" id="frm" onsubmit="guardar(event)" oninput="atualizarDup()" onchange="atualizarDup()">
+   <div class="pdfbox hide" id="pdfBox"></div>
    <div class="dup hide" id="dupBox"></div>
    <div class="conflict hide" id="conflict"><span id="conflictTxt" style="flex:1"></span><button type="button" class="b-sm" onclick="recarregarEdicao()">Carregar versão atual</button></div>
 
@@ -946,6 +954,7 @@ function preencher(r){
 /* ================= ABRIR / GUARDAR ================= */
 function abrir(id,base){
   const f=$("#frm");f.reset();editId=id||null;editBase=null;
+  $("#pdfBox").classList.add("hide");$$(".from-pdf").forEach(e=>e.classList.remove("from-pdf"));
   $("#conflict").classList.add("hide");
   const r=id?dados.find(x=>x.id===id):(base||null);
   $("#mTitle").textContent=id?(sess.role==="consulta"?"Consultar pedido":"Editar pedido"):"Novo pedido";
@@ -1655,6 +1664,134 @@ async function modeloExcel(){
   const wa=XLSX.utils.aoa_to_sheet(ajuda);wa["!cols"]=[{wch:34},{wch:110}];XLSX.utils.book_append_sheet(wb,wa,"Instruções");
   XLSX.writeFile(wb,"Rampa-P_modelo_importacao.xlsx");
 }
+
+/* ================= IMPORTAR PDF (formulário RAMPA-P) ================= */
+let _pdfjsP=null;
+function carregarPDFJS(){
+  if(window.pdfjsLib)return Promise.resolve();
+  const base="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  return _pdfjsP||(_pdfjsP=new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src=base+"pdf.min.js";
+    sc.onload=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc=base+"pdf.worker.min.js";ok()};
+    sc.onerror=()=>{_pdfjsP=null;ko(new Error("Não foi possível carregar o leitor de PDF. Verifique a ligação à internet."))};document.head.appendChild(sc)}));
+}
+async function segmentosPdf(file){
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise,segs=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1}),tc=await pg.getTextContent();
+    tc.items.forEach(it=>{if(it.str&&it.str.trim())segs.push({p:i,x:it.transform[4],y:vp.height-it.transform[5],t:it.str,w:it.width||0,W:vp.width})});
+  }
+  return segs;
+}
+// junta pedaços da mesma linha e emparelha etiqueta (coluna esquerda) com valor (coluna direita)
+function paresPdf(segs){
+  const lado=s=>s.x<s.W*0.18?"L":"V",linhas=[];
+  [...segs].sort((a,b)=>a.p-b.p||a.y-b.y||a.x-b.x).forEach(s=>{
+    const l=linhas.find(l=>l.p===s.p&&l.lado===lado(s)&&Math.abs(l.y-s.y)<2.5);
+    if(l){l.t+=(s.x-l.fim>1?" ":"")+s.t;l.fim=s.x+s.w}else linhas.push({p:s.p,y:s.y,x:s.x,lado:lado(s),t:s.t,fim:s.x+s.w});
+  });
+  linhas.forEach(l=>l.t=l.t.replace(/\s+/g," ").trim());
+  const L=linhas.filter(l=>l.lado==="L"&&l.t),V=linhas.filter(l=>l.lado==="V"&&l.t),out=[];
+  V.sort((a,b)=>a.p-b.p||a.y-b.y).forEach(v=>{
+    const lab=L.filter(l=>l.p===v.p&&Math.abs(l.y-v.y)<=11).sort((a,b)=>a.y-b.y).map(l=>l.t).join(" ");
+    const prev=out[out.length-1];
+    if(prev&&prev.p===v.p&&v.y-prev.y<=11.5&&(!lab||lab===prev.label)){prev.v+=" "+v.t;prev.y=v.y;return}
+    out.push({label:lab,v:v.t,p:v.p,y:v.y});
+  });
+  return out;
+}
+function artesPdf(txt){
+  const k=nrm(txt),r=[];
+  if(/palangre (de )?superficie/.test(k))r.push("Palangre Superfície");
+  if(/linhas? (de )?mao/.test(k))r.push("Linha Mão");
+  if(/cerco/.test(k))r.push("Arte Cerco");
+  if(/turismo|turistica/.test(k))r.push("Pesca Turísmo");
+  if(/fundo/.test(k))r.push("Fundo");
+  return ARTES.filter(t=>r.includes(t));
+}
+function areasPdf(txt){
+  const r=[],fora=[];let m;const re=/PMA\s*0?(\d{1,2})\s*(?:-\s*)?(A\b)?/gi;
+  while(m=re.exec(txt)){const c=m[1]+(m[2]?"-A":"");if(AREAS.includes(c)){if(!r.includes(c))r.push(c)}else if(!fora.includes("PMA"+c))fora.push("PMA"+c)}
+  return {r,fora};
+}
+function interpretarPdf(pares,ficheiro){
+  const r={docs:[],docOutro:"",solMap:{}},av=[],info={},outrosDocs=[],usados=[];
+  let areasAtuais=[],nome="",denom="";
+  const dataPt=t=>{let m=/(\d{4})-(\d{2})-(\d{2})/.exec(t);if(m)return `${m[1]}-${m[2]}-${m[3]}`;m=/(\d{2})[-\/.](\d{2})[-\/.](\d{4})/.exec(t);return m?`${m[3]}-${m[2]}-${m[1]}`:""};
+  const addDoc=d=>{if(!r.docs.includes(d))r.docs.push(d)};
+  pares.forEach(({label,v})=>{
+    const k=nrm(label),val=v.trim();if(!val)return;
+    const usar=c=>usados.push(c);
+    if(/^referencia/.test(k)){r.nPedido=val;usar("nPedido")}
+    else if(/^submetid/.test(k)){r.dataEntrada=dataPt(val);if(r.dataEntrada)usar("dataEntrada")}
+    else if(/^nome da embarcacao|^embarcacao/.test(k)){r.embarcacao=val;usar("embarcacao")}
+    else if(/conjunto de identificacao/.test(k)){r.cjId=val.replace(/\s+/g,"");usar("cjId")}
+    else if(/denominacao|firma|designacao|razao social|nome da (empresa|entidade|sociedade)/.test(k)){denom=denom||val}
+    else if(/^nome( do requerente| completo)?$/.test(k)){nome=nome||val}
+    else if(/fiscal|\bnif\b|\bnipc\b/.test(k))info.nif=val;
+    else if(/^morada|^sede/.test(k))info.morada=val;
+    else if(/^e ?mail/.test(k))info.email=val;
+    else if(/telef|telem/.test(k))info.tel=val;
+    else if(/titulo de propriedade|livrete/.test(k))addDoc("TP");
+    else if(/documento de seguranca|navegabilidade/.test(k))addDoc("CN");
+    else if(/documento unico de pesca|^dup$/.test(k))addDoc("DUP");
+    else if(/^areas? rampa|^areas?$/.test(k)){const a=areasPdf(val);areasAtuais=a.r;
+      if(a.fora.length)av.push(`Área(s) ${a.fora.join(", ")} não fazem parte da lista do Rampa-P — não importadas`);
+      if(!a.r.length&&!a.fora.length)av.push(`Área não reconhecida: “${val}”`)}
+    else if(/^atividades?|^artes?/.test(k)){const t=artesPdf(val);
+      if(!t.length)av.push(`Atividade não reconhecida: “${val}”`);
+      if(!areasAtuais.length&&t.length)av.push(`Atividade sem área associada: “${val}”`);
+      areasAtuais.forEach(a=>r.solMap[a]=ARTES.filter(x=>[...(r.solMap[a]||[]),...t].includes(x)));}
+    else if(/data (de )?inicio/.test(k))info.ini=dataPt(val);
+    else if(/data (de )?fim/.test(k))info.fim=dataPt(val);
+    else if(/certificado|licenca|declaracao|documento|titulo|anexo/.test(k))outrosDocs.push(label);
+  });
+  r.titular=denom||nome;if(r.titular)usados.push("titular");
+  if(outrosDocs.length){addDoc("Outro");r.docOutro=outrosDocs.join("; ")}
+  r.docs=DOCS.map(d=>d[0]).filter(d=>r.docs.includes(d));
+  if(r.docs.length)usados.push("docs");
+  if(r.cjId&&/^PT/i.test(r.cjId)){r.pais="Portugal";usados.push("pais")}
+  if(Object.keys(r.solMap).length)usados.push("solMap");
+  const obs=[`Importado do formulário PDF ${ficheiro}${r.nPedido?` (Ref. ${r.nPedido})`:""}.`];
+  const req=[info.nif&&"NIF "+info.nif,info.morada&&"Morada: "+info.morada,info.email&&"Email: "+info.email,info.tel&&"Tel.: "+info.tel].filter(Boolean);
+  if(nome&&denom&&nome!==denom)req.unshift("Representante: "+nome);
+  if(req.length)obs.push("Requerente — "+req.join("; ")+".");
+  if(info.ini||info.fim)obs.push(`Período pedido: ${fmt(info.ini)||"—"} a ${fmt(info.fim)||"—"}.`);
+  r.observacoes=obs.join("\n");
+  ["nPedido","titular","embarcacao","cjId"].forEach(c=>{if(!r[c])av.push(`Campo não encontrado no PDF: ${{nPedido:"Referência",titular:"Nome do requerente",embarcacao:"Nome da embarcação",cjId:"Conjunto de identificação"}[c]}`)});
+  if(!Object.keys(r.solMap).length)av.push("Nenhuma área/atividade reconhecida no PDF");
+  if(!r.docs.includes("DUP"))av.push("O formulário não indica o DUP — confirme os documentos");
+  return {r,av,usados};
+}
+async function importarPdf(f){
+  if(!f||sess.role==="consulta")return;
+  if(!/\.pdf$/i.test(f.name)&&f.type!=="application/pdf"){alert("Escolha um ficheiro PDF.");return}
+  try{
+    toast("A ler o PDF…");
+    await carregarPDFJS();
+    const segs=await segmentosPdf(f);
+    if(!segs.length){alert("Este PDF não tem texto (é provavelmente uma digitalização). Preencha o pedido manualmente.");return}
+    const {r,av,usados}=interpretarPdf(paresPdf(segs),f.name);
+    if(!usados.length){alert("Não reconheci os campos deste PDF. Confirme que é o formulário de pedido RAMPA-P.");return}
+    const ja=r.nPedido&&dados.find(x=>normCod(x.nPedido)===normCod(r.nPedido));
+    if(ja&&!confirm(`Já existe um pedido com a Referência ${r.nPedido} (${ja.distribuicao}).\nCriar outro pedido a partir deste PDF?`))return;
+    abrir(null,{...r,decisao:"Pendente"});
+    const campos={nPedido:"[name=nPedido]",dataEntrada:"[name=dataEntrada]",titular:"[name=titular]",embarcacao:"[name=embarcacao]",cjId:"[name=cjId]",pais:"[name=pais]",docs:"#docs",solMap:"#mxSol"};
+    usados.forEach(c=>campos[c]&&$(campos[c])&&$(campos[c]).classList.add("from-pdf"));
+    $("[name=observacoes]").classList.add("from-pdf");
+    $("#pdfBox").innerHTML=`<b>📄 Dados importados de ${esc(f.name)}</b> — os campos preenchidos a partir do PDF estão destacados. Confirme-os, indique a <b>Distribuição</b> e guarde.`+
+      (av.length?`<ul>${av.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:"");
+    $("#pdfBox").classList.remove("hide");
+    $("[name=distribuicao]").select();
+  }catch(e){console.error(e);alert("Não foi possível ler o PDF: "+e.message)}
+}
+(function(){ // arrastar um PDF para a janela
+  let n=0;const tem=e=>[...(e.dataTransfer?.items||[])].some(i=>i.kind==="file");
+  addEventListener("dragenter",e=>{if(!tem(e)||!sess||sess.role==="consulta"||$("#mImp").classList.contains("open"))return;n++;document.body.classList.add("drag-pdf")});
+  addEventListener("dragleave",()=>{if(--n<=0){n=0;document.body.classList.remove("drag-pdf")}});
+  addEventListener("dragover",e=>{if(document.body.classList.contains("drag-pdf"))e.preventDefault()});
+  addEventListener("drop",e=>{if(!document.body.classList.contains("drag-pdf"))return;e.preventDefault();n=0;document.body.classList.remove("drag-pdf");
+    const f=[...e.dataTransfer.files].find(x=>/\.pdf$/i.test(x.name));if(f)importarPdf(f);else toast("Largue um ficheiro PDF")});
+})();
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
