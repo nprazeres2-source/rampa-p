@@ -456,6 +456,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     </div>
     <div id="boxInd" class="hide" style="margin-top:12px">
      <label class="f">Justificação do indeferimento<textarea name="justificacao"></textarea></label>
+     <div class="grid" style="margin-top:12px"><label class="f">Dt. Ofício de indeferimento<input type="date" name="dtOficio"><span class="small">Não é emitida licença — apenas ofício a informar o indeferimento.</span></label></div>
     </div>
     <div id="boxAut" class="hide" style="margin-top:12px">
      <div class="grid" style="margin-bottom:12px"><label class="f">N.º de Autorização<input name="nAut" placeholder="Ex.: 123/2026" oninput="atualizarDup()"></label></div>
@@ -465,8 +466,8 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <div class="mxsum" id="sumAut"></div>
      <div class="legenda small"></div>
     </div>
-    <div class="grid" style="margin-top:12px">
-     <label class="f">Dt. Emissão<input type="date" name="dtEmissao" oninput="autoValidade()"></label>
+    <div class="grid hide" id="boxEmi" style="margin-top:12px">
+     <label class="f">Dt. Emissão da licença<input type="date" name="dtEmissao" oninput="autoValidade()"></label>
      <label class="f">Validade<input type="date" name="validade"><span class="small">Preenchida automaticamente até 31/12 do ano de emissão (pode alterar)</span></label>
     </div>
    </fieldset>
@@ -842,6 +843,7 @@ function toggleDec(){
   const v=$("#frm").decisao.value;
   $("#boxInd").classList.toggle("hide",v!=="Indeferido");
   $("#boxAut").classList.toggle("hide",v!=="Autorizado");
+  $("#boxEmi").classList.toggle("hide",v!=="Autorizado");
   if(v==="Autorizado")syncAut();
 }
 /* ================= DUPLICADOS ================= */
@@ -930,7 +932,7 @@ function proxDistrib(){
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","nAut","dtEmissao","validade","observacoes"];
+const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtOficio","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -1033,7 +1035,7 @@ function guardar(e){
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
     autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
-    nAut:dec==="Autorizado"?f.nAut.value.trim():"",dtEmissao:f.dtEmissao.value,validade:f.validade.value,observacoes:f.observacoes.value,
+    nAut:dec==="Autorizado"?f.nAut.value.trim():"",dtEmissao:dec==="Autorizado"?f.dtEmissao.value:"",validade:dec==="Autorizado"?f.validade.value:"",dtOficio:dec==="Indeferido"?f.dtOficio.value:"",observacoes:f.observacoes.value,
     criado:ant?.criado||agora,criadoPor:ant?.criadoPor||sess.nome,criadoPorEmail:ant?.criadoPorEmail||sess.email,
     alterado:agora,alteradoPor:sess.nome,alteradoPorEmail:sess.email,apagado:false
   };
@@ -1049,7 +1051,7 @@ function apagar(){
 }
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
-  ["nPedido","nAut","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
+  ["nPedido","nAut","dtOficio","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
   r.decisao="Pendente";r.solMap=mapa(r,"sol");r.autMap={};r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
@@ -1156,7 +1158,7 @@ function render(){
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}</td>
-    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}</div>`:""}</td><td>${fmt(r.dtEmissao)}</td><td>${valTag(r)}</td></tr>`).join("")
+    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}</div>`:""}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?valTag(r):""}</td></tr>`).join("")
     :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
   $("#stats").innerHTML=statsHTML(lst);
@@ -1174,6 +1176,11 @@ function docsCel(r){
   if(!r.docs)return r.documentos?'<span class="small">texto</span>':"";
   const d=r.docs,falta=DOCS_OBR.filter(x=>!d.includes(x));
   return esc(d.join(", "))+(falta.length?` <span class="late" title="Em falta: ${falta.join(", ")}">⚠</span>`:"");
+}
+function dtEmiCel(r){
+  if(r.decisao==="Autorizado")return fmt(r.dtEmissao);
+  if(r.decisao==="Indeferido")return r.dtOficio?`<span class="small">Ofício ${fmt(r.dtOficio)}</span>`:"";
+  return "";
 }
 function statsHTML(lst){
   const ds=dupSet(),nd=lst.filter(r=>ds.has(r.id)).length;
@@ -1330,7 +1337,7 @@ function imprimirListagem(){
   const j=a=>esc((a||[]).join(", "));
   const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc(txtMap(mapa(r,"sol")))}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
-    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(r.dtEmissao)}</td><td>${fmt(r.validade)}</td></tr>`}).join("");
+    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?fmt(r.validade):""}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("Rampa-P — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
    <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Solicitado (área: artes)</th><th>Docs</th>
@@ -1355,7 +1362,7 @@ function abrirOficio(){
   ofRec=dados.find(x=>x.id===editId);if(!ofRec)return;
   const c=ofCfg();
   $("#ofEnt").value=c.ent;$("#ofLocal").value=c.local;$("#ofCargo").value=c.cargo;$("#ofAss").value=c.ass;
-  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value="";$("#ofData").value=hoje();
+  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value="";$("#ofData").value=(ofRec.decisao==="Indeferido"?ofRec.dtOficio:ofRec.dtEmissao)||hoje();
   $("#ofLogo").src=logoSrc();
   gerarOficio(false);$("#mOf").classList.add("open");
 }
@@ -1402,7 +1409,7 @@ function imprimir(){
    <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
-    ${row("Dt. Emissão",fmt(r.dtEmissao))}${row("Validade",fmt(r.validade))}</table>
+    ${r.decisao==="Autorizado"?row("Dt. Emissão da licença",fmt(r.dtEmissao))+row("Validade",fmt(r.validade)):""}${r.decisao==="Indeferido"?row("Dt. Ofício de indeferimento",fmt(r.dtOficio)):""}</table>
    <h3>Observações</h3><table>${row("Observações",nl(r.observacoes))}</table></div>`;
   imprimirHTML($("#printArea").innerHTML,false);
 }
@@ -1418,7 +1425,7 @@ const COLS_X=[ // ordem das colunas no Excel exportado / modelo
  ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["embarcacao","Embarcação"],
  ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["pareceres","Pareceres"],
  ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["nAut","N.º Autorização"],
- ["justificacao","Justificação Indeferimento"],["autMap","Autorizado (área: artes)"],["dtEmissao","Dt Emissão"],["validade","Validade"],
+ ["justificacao","Justificação Indeferimento"],["dtOficio","Dt. Ofício Indeferimento"],["autMap","Autorizado (área: artes)"],["dtEmissao","Dt Emissão"],["validade","Validade"],
  ["observacoes","Observações"],["criadoPor","Registado por"],["alteradoPor","Última alteração por"]];
 const nrm=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const SINON={
@@ -1438,6 +1445,7 @@ const SINON={
  dtDRPM:["dt envio drpm","data envio drpm","envio drpm","data de envio drpm"],
  decisao:["decisao","autorizado ou indeferido","estado","situacao"],
  nAut:["n autorizacao","no autorizacao","numero autorizacao","numero da autorizacao","autorizacao n","n da autorizacao"],
+ dtOficio:["dt oficio indeferimento","dt oficio","data oficio","data do oficio","data oficio indeferimento"],
  justificacao:["justificacao indeferimento","justificacao","motivo indeferimento","justificacao do indeferimento","fundamento"],
  areasAut:["areas autorizadas","area autorizada","areas aut"],
  artesAut:["artes autorizadas","arte autorizada","artes aut"],
@@ -1507,7 +1515,7 @@ function interpretarExcel(aoa){
     if(!L.some(c=>String(c??"").trim()))continue;
     const av=[],r={};
     ["distribuicao","nPedido","titular","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
-    ["dataEntrada","dtDRP","dtDRPM","dtEmissao","validade"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
+    ["dataEntrada","dtDRP","dtDRPM","dtEmissao","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
     if(mapa.solMap!==undefined&&txt("solMap"))r.solMap=mapaX(g("solMap"),av,"Solicitado");
     else if(mapa.areasSol!==undefined)r.solMap=mapaAreasArtes(g("areasSol"),g("artesSol"),av,"Solicitado");
     if(mapa.autMap!==undefined&&txt("autMap"))r.autMap=mapaX(g("autMap"),av,"Autorizado");
@@ -1519,6 +1527,7 @@ function interpretarExcel(aoa){
       if(fora.length){av.push(`autorizado não solicitado em ${a}: ${fora.map(abr).join(", ")} — acrescentado ao solicitado`);r.solMap[a]=ARTES.filter(t=>[...(r.solMap[a]||[]),...fora].includes(t))}})}
     if(r.decisao==="Autorizado"&&r.dtEmissao&&!r.validade)r.validade=r.dtEmissao.slice(0,4)+"-12-31";
     if(r.decisao==="Indeferido"&&!r.justificacao)av.push("indeferido sem justificação");
+    if(r.decisao==="Indeferido"&&(r.dtEmissao||r.validade)){av.push("indeferido não tem licença — Dt Emissão/Validade ignoradas");r.dtEmissao="";r.validade=""}
     const erro=!r.distribuicao?"sem Distribuição":"";
     linhas.push({n:i+1,r,av,erro});
   }
@@ -1589,11 +1598,12 @@ async function confirmarImp(){
         Object.entries(x.r).forEach(([k,v])=>{const vazio=v===""||v==null||(Array.isArray(v)&&!v.length)||(typeof v==="object"&&!Array.isArray(v)&&!Object.keys(v).length);if(!vazio)doc[k]=v});
       }else{
         doc={distribuicao:"",dataEntrada:"",nPedido:"",titular:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
-          decisao:"Pendente",justificacao:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
+          decisao:"Pendente",justificacao:"",dtOficio:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
           criado:agora,criadoPor:sess.nome,criadoPorEmail:sess.email,apagado:false};
       }
       if(doc.decisao!=="Autorizado"){doc.autMap={};doc.nAut=""}
-      if(doc.decisao!=="Indeferido")doc.justificacao="";
+      if(doc.decisao!=="Indeferido"){doc.justificacao="";doc.dtOficio=""}
+      if(doc.decisao!=="Autorizado"){doc.dtEmissao="";doc.validade=""}
       const s1=resumo(doc.solMap||{}),s2=resumo(doc.autMap||{});
       Object.assign(doc,{areasSol:s1.areasSol,artesSol:s1.artesSol,areasAut:s2.areasSol,artesAut:s2.artesSol},quem());
       return (x.ex?col.doc(x.ex.id):col.doc()).set(doc).then(()=>ok++).catch(e=>{falhas++;console.error(e)});
@@ -1607,8 +1617,8 @@ function linhaExcel(r){
   const t=dias(r.dtDRP,r.dtDRPM);
   return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
     documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
-    tempo:t??"",decisao:r.decisao||"Pendente",nAut:r.nAut||"",justificacao:r.justificacao||"",autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
-    dtEmissao:fmt(r.dtEmissao),validade:fmt(r.validade),observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
+    tempo:t??"",decisao:r.decisao||"Pendente",nAut:r.nAut||"",justificacao:r.justificacao||"",dtOficio:r.decisao==="Indeferido"?fmt(r.dtOficio):"",autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
+    dtEmissao:r.decisao==="Autorizado"?fmt(r.dtEmissao):"",validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
 }
 function folhaXLSX(linhas){
   const aoa=[COLS_X.map(c=>c[1]),...linhas.map(o=>COLS_X.map(([k])=>o[k]??""))];
@@ -1627,7 +1637,7 @@ async function modeloExcel(){
   try{await carregarXLSX()}catch(e){alert(e.message);return}
   const ex={distribuicao:"SGC0060/2026/0001",dataEntrada:"15/01/2026",nPedido:"123/2026",titular:"Nome do titular",embarcacao:"Mar Azul",cjId:"H-1234-L",pais:"Portugal",
     documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",nAut:"45/2026",
-    justificacao:"",autMap:"17: Fundo",dtEmissao:"10/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
+    justificacao:"",dtOficio:"",autMap:"17: Fundo",dtEmissao:"10/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,folhaXLSX([ex]),"Pedidos");
   const ajuda=[["Coluna","Como preencher"],
     ["Distribuição","Obrigatória. Ex.: SGC0060/2026/0001. Se já existir na app, o pedido é ignorado ou atualizado (escolhe ao importar)."],
@@ -1638,7 +1648,8 @@ async function modeloExcel(){
     ["Áreas",AREAS.join(", ")+" (também aceita PMA17, 12A…)"],
     ["Artes",ARTES.map(t=>`${abr(t)} = ${nomeArte(t)}`).join("; ")],
     ["Decisão","Pendente, Autorizado ou Indeferido (vazio = Pendente)."],
-    ["Validade","Se ficar vazia num pedido Autorizado com Dt Emissão, fica 31/12 do ano de emissão."],
+    ["Dt Emissão / Validade","Só para pedidos Autorizados (licença). Se a Validade ficar vazia, fica 31/12 do ano de emissão."],
+    ["Dt. Ofício Indeferimento","Só para pedidos Indeferidos — não há licença, apenas ofício."],
     ["Tempo Exec. DRP, Registado por, Última alteração por","Calculados pela app — são ignorados ao importar."],
     ["Alternativa","Pode usar as colunas “Áreas Solicitadas” + “Artes Solicitadas” (e “Áreas/Artes Autorizadas”) em vez das colunas área: artes."]];
   const wa=XLSX.utils.aoa_to_sheet(ajuda);wa["!cols"]=[{wch:34},{wch:110}];XLSX.utils.book_append_sheet(wb,wa,"Instruções");
@@ -1651,7 +1662,7 @@ function exportCSV(){
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
     r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
-    fmt(r.dtEmissao),fmt(r.validade),r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
+    r.decisao==="Autorizado"?fmt(r.dtEmissao):"",r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
 function exportJSON(){baixar(JSON.stringify({app:"Rampa-P",versao:3,exportado:new Date().toISOString(),exportadoPor:sess.email,dados:todos},null,1),`Rampa-P_backup_${hoje()}.json`,"application/json")}
