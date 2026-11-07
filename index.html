@@ -13,9 +13,9 @@
 <style>
 :root{--bg:#f3f6f9;--card:#fff;--ink:#1c2733;--muted:#5d6b7a;--line:#dbe3ea;--pri:#0b5c8a;--pri2:#e6f1f8;
  --ok:#1d7a45;--okbg:#e5f5ec;--bad:#b42318;--badbg:#fdecea;--warn:#a15c00;--warnbg:#fff4e0;
- --s1:#2a78d6;--s2:#eb6834;--st-good:#0ca30c;--st-bad:#d03b3b;--st-warn:#fab219;--grid:#e8edf2;}
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--st-good:#0ca30c;--st-bad:#d03b3b;--st-warn:#fab219;--grid:#e8edf2;}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#17222d;--ink:#e6edf3;--muted:#9fb0c1;--line:#2a3846;--pri:#4ba3d9;--pri2:#1b3346;
- --ok:#5cc98a;--okbg:#173327;--bad:#f2867c;--badbg:#3a1c1a;--warn:#f0b35a;--warnbg:#3a2c14;--s1:#3987e5;--s2:#d95926;--grid:#24313d;}}
+ --ok:#5cc98a;--okbg:#173327;--bad:#f2867c;--badbg:#3a1c1a;--warn:#f0b35a;--warnbg:#3a2c14;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#24313d;}}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
 header{background:#0b5c8a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -172,6 +172,46 @@ body.drag-pdf::after{content:"Largue o PDF para criar o pedido";position:fixed;i
 .adbox{background:var(--pri2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:13px}
 .adbox ul{margin:4px 0 0;padding-left:18px}.adbox li button{padding:1px 8px;font-size:12px;margin-left:6px}
 .t-ad{background:var(--pri2);color:var(--pri)}
+.rel{background:var(--warnbg);color:var(--ink);border:1px solid var(--warn);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.rel>b{color:var(--warn)}
+.rel ul{margin:6px 0 0;padding-left:18px}.rel li{margin:6px 0}
+.rel li button{padding:1px 8px;font-size:12px;margin-left:6px}
+.rel .dif{display:block;margin-left:2px;color:var(--muted)}
+.rel .dif b{color:var(--ink);font-weight:600}
+.rel .sob{color:var(--bad);font-weight:700}
+.ttab{width:100%;border-collapse:collapse;min-width:640px}
+.ttab th,.ttab td{padding:7px 10px;border-bottom:1px solid var(--line);font-size:13px;position:static}
+.ttab td.n,.ttab th.n{text-align:right;font-variant-numeric:tabular-nums}
+.ttab .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.gsecs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.gsecs button{border-radius:20px;padding:6px 14px;font-size:13px}
+.gsecs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.gsec-t{font-size:17px;color:var(--pri);margin:18px 0 10px;padding-bottom:4px;border-bottom:2px solid var(--pri2)}
+.gblk{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.gblk h3{margin:0 0 8px;font-size:15px}
+.gblk .stats{margin-bottom:0}
+.gtab{width:100%;border-collapse:collapse}
+.gtab th,.gtab td{padding:6px 9px;border-bottom:1px solid var(--line);font-size:13px;text-align:left;position:static;vertical-align:top}
+.gtab th{background:var(--pri2)}
+.gtab td.n,.gtab th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gtab button{padding:2px 9px;font-size:12px}
+.gwrap{overflow-x:auto}
+.hm{border-collapse:separate;border-spacing:3px;width:100%;min-width:520px}
+.hm th{font-size:12px;font-weight:600;padding:4px;text-align:center;position:static;background:none}
+.hm th.ar{text-align:left;white-space:nowrap}
+.hm td{text-align:center;font-size:13px;font-variant-numeric:tabular-nums;border-radius:4px;padding:7px 4px;cursor:pointer;min-width:52px}
+.hm td.z{color:var(--muted);cursor:default}
+.up{color:var(--bad)}.down{color:var(--ok)}
+.chips-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.chips-inline select,.chips-inline input{width:auto}
+@media print{.pf .noprint,.pf button,.pf select,.pf input{display:none!important}
+  .pf .gblk{border:1px solid #bbb;page-break-inside:avoid;padding:6px;margin-bottom:8px}
+  .pf .gsec-t{font-size:14px;border-bottom:1px solid #000;color:#000;page-break-after:avoid}
+  .pf .hm td{-webkit-print-color-adjust:exact;print-color-adjust:exact;border:1px solid #ddd}
+  .pf .stats{display:flex;flex-wrap:wrap;gap:6px}.pf .stat{border:1px solid #999;border-radius:4px;padding:4px 10px;font-size:11px}
+  .pf .stat b{display:block;font-size:15px}
+  .pf .charts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pf .ch{page-break-inside:avoid;border:1px solid #ccc;padding:6px}
+  .pf .ch h3{font-size:11px;margin:0 0 4px}.pf .ch img{width:100%;height:auto}.pf .ch-h .small{display:none}}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
 #toast.show{opacity:1}
 #printArea{display:none}
@@ -325,9 +365,11 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
         <label class="f">Tempo DRP máx. (dias)<input type="number" min="0" data-f="tMax" oninput="render()"></label>
         <label class="f">Data a filtrar<select data-f="dCampo" onchange="render()">
           <option value="dataEntrada">Data Entrada</option><option value="dtDRP">Dt. envio DRP</option>
-          <option value="dtDRPM">Dt. envio DRPM</option><option value="dtProc">Dt. processamento</option><option value="dtEmissao">Dt. emissão</option><option value="dtEnvio">Dt. envio ao requerente</option><option value="validade">Validade</option></select></label>
+          <option value="dtDRPM">Dt. envio DRPM</option><option value="dtProc">Dt. processamento</option><option value="dtEmissao">Dt. emissão</option><option value="dtEnvio">Dt. envio ao requerente</option><option value="periodoIni">Período pedido (início)</option><option value="periodoFim">Período pedido (fim)</option><option value="validade">Validade</option></select></label>
         <label class="f">De<input type="date" data-f="dDe" oninput="render()"></label>
         <label class="f">Até<input type="date" data-f="dAte" oninput="render()"></label>
+        <label class="f">Fase atual<select data-f="fase" id="fFase" onchange="render()"></select></label>
+        <label class="f">Dados em falta / a verificar<select data-f="qual" id="fQual" onchange="render()"></select></label>
         <label class="f">Tipo de pedido<select data-f="tipo" onchange="render()"><option value="">Todos</option><option value="Novo">Só pedidos novos</option><option value="Adenda">Só adendas</option><option value="comAd">Autorizações com adendas</option></select></label>
         <label class="f">Duplicados<select data-f="dup" onchange="render()">
           <option value="">Mostrar todos</option><option value="sim">Só possíveis duplicados</option></select></label>
@@ -376,8 +418,9 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
       <span class="small" style="margin-left:auto">Clique numa barra para ver os pedidos correspondentes.</span>
       <button onclick="imprimirRelatorio()">🖨 Relatório</button>
     </div>
+    <div class="gsecs" id="gSecs"></div>
     <div class="stats" id="gStats"></div>
-    <div class="charts" id="charts"></div>
+    <div id="gCorpo"></div>
   </section>
   <section id="reciclagem" class="hide">
     <div class="secbox">
@@ -434,6 +477,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
   <form class="dlg-b" id="frm" onsubmit="guardar(event)" oninput="atualizarDup()" onchange="atualizarDup()">
    <div class="pdfbox hide" id="pdfBox"></div>
    <div class="dup hide" id="dupBox"></div>
+   <div class="rel hide" id="relBox"></div>
    <div class="conflict hide" id="conflict"><span id="conflictTxt" style="flex:1"></span><button type="button" class="b-sm" onclick="recarregarEdicao()">Carregar versão atual</button></div>
 
    <fieldset><legend>Identificação do pedido</legend>
@@ -477,6 +521,10 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     <p class="small" style="margin:0 0 6px">Marque, em cada área, as artes pedidas. Clique no nome de uma área para marcar a linha toda, ou no nome de uma arte para a marcar em todas as áreas já escolhidas.</p>
     <div class="mxw"><table class="mx" id="mxSol"></table></div>
     <div class="mxsum" id="sumSol"></div>
+    <div class="grid" style="margin-top:12px">
+     <label class="f">Período pedido — início<input type="date" name="periodoIni" oninput="checkPeriodo();atualizarDup()"></label>
+     <label class="f">Período pedido — fim<input type="date" name="periodoFim" oninput="checkPeriodo();atualizarDup()"><span class="hint" id="perHint"></span></label>
+    </div>
     <div class="legenda small"></div>
    </fieldset>
 
@@ -489,6 +537,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <label class="f">Dt. processamento<input type="date" name="dtProc" oninput="calcTempo()"><span class="small">Envio para assinatura</span></label>
      <label class="f">Dt. emissão<input type="date" name="dtEmissao" oninput="autoValidade();hintNAut();calcTempo()"><span class="small">Data de assinatura (autorização ou ofício)</span></label>
      <label class="f">Dt. envio ao requerente<input type="date" name="dtEnvio" oninput="calcTempo()"><span class="small">Envio da autorização / ofício</span></label>
+     <label class="f">Até processamento<input id="tempoProc" readonly placeholder="—"><span class="small">Da Data Entrada à Dt. processamento (e sem o tempo na DRP)</span></label>
      <label class="f">Tempo total do processo<input id="tempoTot" readonly placeholder="—"><span class="small">Da Data Entrada ao envio ao requerente</span></label>
      <span class="hint full" id="ordemHint"></span>
     </div>
@@ -774,7 +823,7 @@ function ligar(){
     dados=todos.filter(r=>!r.apagado);lixo=todos.filter(r=>r.apagado);
     const pend=snap.metadata.hasPendingWrites,cache=snap.metadata.fromCache;
     $("#net").textContent=pend?"⏳ A sincronizar…":cache?"⚠ Offline (alterações ficam pendentes)":"● Ligado · "+dados.length+" pedidos";
-    _dupCache=null;verificarConflito();render();atualizarDup();renderLixo();primeiraCarga=false;
+    _dupCache=null;_sobCache=null;verificarConflito();render();atualizarDup();renderLixo();primeiraCarga=false;
     if(!cache&&sess.role==="admin"&&!_purgado){_purgado=true;purgarLixo()}
   },err=>{
     console.error(err);
@@ -887,6 +936,8 @@ function calcTempo(){
   $("#tempo").value=d===null?(f.dtDRP.value?"Na DRP há "+dias(f.dtDRP.value,hoje())+" dias":""):d+(Math.abs(d)===1?" dia":" dias");
   const nd=d===null&&f.dtDRP.value?dias(f.dtDRP.value,hoje()):null;
   $("#tempoHint").textContent=d!==null&&d<0?"Atenção: a data DRPM é anterior à data DRP":nd!==null&&nd>limiteDRP()?`⏰ Parado na DRP acima do limite (${limiteDRP()} dias)`:"";
+  const tp=temposDe({dataEntrada:f.dataEntrada.value,dtProc:f.dtProc.value,dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value});
+  $("#tempoProc").value=tp.proc===null?"":`${tp.proc} dias`+(tp.semDrp!==null&&tp.semDrp!==tp.proc?` (${tp.semDrp} sem DRP)`:"");
   const tt=dias(f.dataEntrada.value,f.dtEnvio.value);
   $("#tempoTot").value=tt===null?(f.dataEntrada.value&&!f.dtEnvio.value?"Em curso há "+dias(f.dataEntrada.value,hoje())+" dias":""):tt+(Math.abs(tt)===1?" dia":" dias");
   const seq=[["dataEntrada","Data Entrada"],["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["dtProc","Dt. processamento"],["dtEmissao","Dt. emissão"],["dtEnvio","Dt. envio ao requerente"]]
@@ -918,14 +969,10 @@ function duplicados(r,ignorarId){
     if(r.nAut&&normCod(o.nAut)===normCod(r.nAut)){m.push("mesmo N.º de Autorização");grave=true}
     const mesmaEmb=(r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao))||(r.cjId&&normCod(o.cjId)===normCod(r.cjId));
     if(mesmaEmb&&!lig&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
-    if(mesmaEmb&&!grave&&!lig&&ativo(o)){
-      const om=o.decisao==="Autorizado"?mapa(o,"aut"):mapa(o,"sol"),rm=mapa(r,"sol"),comum={};
-      Object.entries(rm).forEach(([a,ts])=>{const c=ts.filter(t=>(om[a]||[]).includes(t));if(c.length)comum[a]=c});
-      if(Object.keys(comum).length)m.push(`a embarcação já tem pedido ${o.decisao==="Autorizado"?"autorizado e válido":"pendente"} para ${txtMap(comum)}`);
+    if(!m.length&&!lig&&mesmaEmb&&pares(mapa(r,"sol")).length&&pares(mapa(o,"sol")).sort().join()===pares(mapa(r,"sol")).sort().join()){
+      const pr=periodoDe(r),po=periodoDe(o);
+      if(pr&&po&&pr.ini===po.ini&&pr.fim===po.fim){m.push("mesma embarcação, mesmas áreas/artes e mesmo período");grave=true}
     }
-    if(!m.length&&!lig&&r.titular&&(r.embarcacao||r.cjId)&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
-       pares(mapa(r,"sol")).length&&pares(mapa(o,"sol")).sort().join()===pares(mapa(r,"sol")).sort().join())
-      m.push("mesmo titular, embarcação e as mesmas áreas/artes");
     if(m.length)out.push({rec:o,motivos:m,grave});
   });
   return out;
@@ -943,15 +990,62 @@ function dupSet(){
   Object.values(idx).forEach(ids=>{if(ids.length>1)ids.forEach(i=>s.add(i))});
   return _dupCache=s;
 }
+// período a comparar: o pedido; se não houver e estiver autorizado, a autorização (emissão → validade)
+function periodoDe(r){
+  if(r.periodoIni||r.periodoFim)return {ini:r.periodoIni||"",fim:r.periodoFim||"",tipo:"pedido"};
+  if(r.decisao==="Autorizado"){const v=vigente(r);if(dtAss(v)||v.validade)return {ini:dtAss(v),fim:v.validade||"",tipo:"autorizado"}}
+  return null;
+}
+const txtPer=p=>p?`${fmt(p.ini)||"…"} a ${fmt(p.fim)||"…"}${p.tipo==="autorizado"?" (autorizado)":""}`:"não indicado";
+function sobrepoe(a,b){if(!a||!b)return null;const ai=a.ini||"0000",af=a.fim||"9999",bi=b.ini||"0000",bf=b.fim||"9999";return ai<=bf&&bi<=af}
+function relacionados(r,ignorarId){
+  const out=[];
+  const nifR=(r.nif||"").replace(/\s/g,"");
+  dados.forEach(o=>{
+    if(o.id===ignorarId)return;
+    const lig=(ehAdenda(r)&&r.adendaDe&&(normCod(o.nAut)===normCod(r.adendaDe)||normCod(o.adendaDe)===normCod(r.adendaDe)))||(ehAdenda(o)&&r.nAut&&normCod(o.adendaDe)===normCod(r.nAut));
+    if(lig)return;
+    const embN=r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao),embC=r.cjId&&normCod(o.cjId)===normCod(r.cjId);
+    const reqN=nifR&&(o.nif||"").replace(/\s/g,"")===nifR,reqT=r.titular&&norm(o.titular)===norm(r.titular);
+    if(!(embN||embC||reqN||reqT))return;
+    const porque=[(embN||embC)?"mesma embarcação":"",(reqN||reqT)?(reqN?"mesmo requerente (NIF)":"mesmo titular"):""].filter(Boolean).join(" e ");
+    const om=o.decisao==="Autorizado"?mapa(vigente(o),"aut"):mapa(o,"sol"),rm=r.solMap||mapa(r,"sol");
+    const so=(a,b)=>{const x={};Object.entries(a).forEach(([ar,ts])=>{const f=ts.filter(t=>!(b[ar]||[]).includes(t));if(f.length)x[ar]=f});return x};
+    const com={};Object.entries(rm).forEach(([ar,ts])=>{const c=ts.filter(t=>(om[ar]||[]).includes(t));if(c.length)com[ar]=c});
+    const sN=so(rm,om),sO=so(om,rm),pr=periodoDe(r),po=periodoDe(o),sob=sobrepoe(pr,po);
+    const dif=[];
+    if(Object.keys(sN).length)dif.push(["Só neste pedido",txtMap(sN)]);
+    if(Object.keys(sO).length)dif.push([`Só no ${o.decisao==="Autorizado"?"autorizado":"outro pedido"}`,txtMap(sO)]);
+    if(Object.keys(com).length)dif.push(["Em comum",txtMap(com)]);
+    if(!Object.keys(rm).length&&!Object.keys(om).length)dif.push(["Áreas/artes","não indicadas"]);
+    const mesmoPer=pr&&po&&pr.ini===po.ini&&pr.fim===po.fim;
+    dif.push(["Período",mesmoPer?`igual (${txtPer(pr)})`:`este: ${txtPer(pr)} · outro: ${txtPer(po)}`+(sob===true?" — sobrepõem-se":sob===false?" — não se sobrepõem":"")]);
+    if((embN||embC)&&!(reqN||reqT)&&o.titular&&r.titular)dif.push(["Titular diferente",o.titular]);
+    if((reqN||reqT)&&!(embN||embC)&&(o.embarcacao||o.cjId)&&(r.embarcacao||r.cjId))dif.push(["Embarcação diferente",[o.embarcacao,o.cjId].filter(Boolean).join(" ")]);
+    const conflito=(embN||embC)&&Object.keys(com).length>0&&sob!==false&&ativo(o);
+    out.push({rec:o,porque,dif,conflito});
+  });
+  return out.sort((a,b)=>(b.conflito-a.conflito)||String(b.rec.dataEntrada||"").localeCompare(String(a.rec.dataEntrada||"")));
+}
+const estadoTxt=o=>`${o.decisao||"Pendente"}${o.nAut?" "+o.nAut:""}${ehAdenda(o)?" (adenda à "+o.adendaDe+")":""}${o.decisao==="Autorizado"&&estadoValidade(o)==="expirado"?" · expirado":""}`;
 function lerFormDup(){
   const f=$("#frm");
   return {distribuicao:f.distribuicao.value.trim(),nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
     embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,solMap:getMx("mxSol"),
-    nAut:f.decisao.value==="Autorizado"&&f.tipoPedido.value!=="Adenda"?f.nAut.value.trim():"",tipoPedido:f.tipoPedido.value,adendaDe:f.adendaDe.value.trim()};
+    nAut:f.decisao.value==="Autorizado"&&f.tipoPedido.value!=="Adenda"?f.nAut.value.trim():"",tipoPedido:f.tipoPedido.value,adendaDe:f.adendaDe.value.trim(),
+    nif:f.nif.value.trim(),periodoIni:f.periodoIni.value,periodoFim:f.periodoFim.value};
 }
 function atualizarDup(){
   if(!$("#modal").classList.contains("open"))return;
-  const d=duplicados(lerFormDup(),editId),box=$("#dupBox");
+  const fr=lerFormDup(),d=duplicados(fr,editId),box=$("#dupBox");
+  // pedidos relacionados (mesma embarcação ou requerente) com as diferenças
+  const rel=relacionados(fr,editId).filter(x=>!d.some(y=>y.rec.id===x.rec.id)),rb=$("#relBox");
+  if(rel.length){
+    const MAX=8,nConf=rel.filter(x=>x.conflito).length;
+    rb.innerHTML=`<b>ℹ ${rel.length} outro${rel.length>1?"s":""} pedido${rel.length>1?"s":""} da mesma embarcação / requerente${nConf?` — <span class="sob">${nConf} com áreas/artes em comum e período sobreposto</span>`:""}</b><ul>${rel.slice(0,MAX).map(x=>`<li>${x.conflito?'<span class="sob">⚠</span> ':""}<strong>${esc(x.rec.distribuicao)}</strong> — ${esc(x.porque)} · ${esc(estadoTxt(x.rec))}<button type="button" onclick="abrirOutro('${x.rec.id}')">Abrir</button>
+      ${x.dif.map(([k,v])=>`<span class="dif"><b>${esc(k)}:</b> ${esc(v)}</span>`).join("")}</li>`).join("")}</ul>${rel.length>MAX?`<span class="small">… e mais ${rel.length-MAX} pedido(s) anteriores.</span>`:""}`;
+    rb.classList.remove("hide");
+  }else rb.classList.add("hide");
   if(!d.length){box.classList.add("hide");return}
   box.innerHTML=`<b>⚠ Atenção: possível duplicação de informação</b><ul>${d.map(x=>`<li><strong>${esc(x.rec.distribuicao)}</strong> — ${esc(x.rec.titular||"sem titular")}${x.rec.cjId?" ["+esc(x.rec.cjId)+"]":""}${x.rec.embarcacao?" / "+esc(x.rec.embarcacao):""}: ${esc(x.motivos.join("; "))}<button type="button" onclick="abrirOutro('${x.rec.id}')">Abrir</button></li>`).join("")}</ul>`;
   box.classList.remove("hide");
@@ -1089,12 +1183,26 @@ function listaAdendas(r){
   box.classList.remove("hide");
 }
 
+function checkPeriodo(){const f=$("#frm");$("#perHint").textContent=f.periodoIni.value&&f.periodoFim.value&&f.periodoFim.value<f.periodoIni.value?"O fim é anterior ao início":""}
+/* ---- responsável por etapa ---- */
+const ETAPAS=[["registo","Registados"],["dtDRP","Enviados à DRP"],["dtDRPM","Regresso da DRP"],["dtProc","Processados (p/ assinatura)"],["decisao","Decisões"],["dtEmissao","Emitidos (assinatura)"],["dtEnvio","Enviados ao requerente"]];
+const chaveU=e=>String(e||"").toLowerCase().replace(/\./g,"_");
+let _origem="manual";
+function marcarEtapas(novo,ant,origem){
+  const et={...((ant&&ant.etapas)||{})},q={e:sess.email,n:sess.nome,t:Date.now()};
+  if(!ant&&!et.registo)et.registo={...q,o:origem||"manual"};
+  ["dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio"].forEach(k=>{if(novo[k]&&novo[k]!==(ant&&ant[k]))et[k]=q;if(!novo[k])delete et[k]});
+  if((novo.decisao==="Autorizado"||novo.decisao==="Indeferido")&&novo.decisao!==(ant&&ant.decisao))et.decisao={...q,d:novo.decisao};
+  if(novo.decisao==="Pendente")delete et.decisao;
+  const ed={...((ant&&ant.edicoes)||{})},k=chaveU(sess.email);ed[k]={e:sess.email,n:sess.nome,c:((ed[k]||{}).c||0)+1,t:Date.now()};
+  novo.etapas=et;novo.edicoes=ed;return novo;
+}
 function proxDistrib(){
   const ano=new Date().getFullYear();let pref="SGC0060",max=0;
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["tipoPedido","adendaDe","distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtProc","dtEnvio","nAut","dtEmissao","validade","observacoes"];
+const CAMPOS=["periodoIni","periodoFim","tipoPedido","adendaDe","distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtProc","dtEnvio","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -1109,6 +1217,7 @@ function preencher(r){
 
 /* ================= ABRIR / GUARDAR ================= */
 function abrir(id,base){
+  _origem="manual";
   const f=$("#frm");f.reset();editId=id||null;editBase=null;
   $("#pdfBox").classList.add("hide");$$(".from-pdf").forEach(e=>e.classList.remove("from-pdf"));
   f.nAut.readOnly=true;
@@ -1126,7 +1235,7 @@ function abrir(id,base){
   $("#dupBox").classList.add("hide");
   if(!f.tipoPedido.value)f.tipoPedido.value="Novo";
   $("#boxAdDe").classList.toggle("hide",f.tipoPedido.value!=="Adenda");infoOriginal();listaAdendas(id?r:null);
-  calcTempo();toggleDec();syncAut();docsChange();validarNif();hintNAut();
+  calcTempo();toggleDec();syncAut();docsChange();validarNif();hintNAut();checkPeriodo();
   $("#modal").classList.add("open");atualizarDup();
   if(!$("#dupBox").classList.contains("hide"))toast("⚠ Este pedido tem possível duplicação de informação");
 }
@@ -1186,7 +1295,13 @@ async function guardar(e){
   e.preventDefault();if(sess.role==="consulta"||_aGuardar)return;const f=$("#frm");
   const dist=f.distribuicao.value.trim();
   const dups=duplicados(lerFormDup(),editId);
-  if(dups.length&&!confirm("⚠ POSSÍVEL DUPLICAÇÃO DE INFORMAÇÃO\n\n"+dups.map(x=>`• ${x.rec.distribuicao} (${x.rec.titular||"sem titular"}): ${x.motivos.join("; ")}`).join("\n")+"\n\nGuardar mesmo assim?"))return;
+  const rels=relacionados(lerFormDup(),editId).filter(x=>!dups.some(y=>y.rec.id===x.rec.id));
+  if(dups.length||rels.length){
+    let msg="";
+    if(dups.length)msg+="⚠ POSSÍVEL DUPLICAÇÃO DE INFORMAÇÃO\n"+dups.map(x=>`• ${x.rec.distribuicao} (${x.rec.titular||"sem titular"}): ${x.motivos.join("; ")}`).join("\n")+"\n\n";
+    if(rels.length)msg+=`ℹ OUTROS PEDIDOS DA MESMA EMBARCAÇÃO / REQUERENTE (${rels.length})\n`+rels.slice(0,6).map(x=>`• ${x.rec.distribuicao} — ${estadoTxt(x.rec)}${x.conflito?" ⚠ áreas/artes em comum e período sobreposto":""}\n   `+x.dif.map(([k,v])=>`${k}: ${v}`).join("\n   ")).join("\n")+(rels.length>6?`\n… e mais ${rels.length-6}`:"")+"\n\n";
+    if(!confirm(msg+"Guardar mesmo assim?"))return;
+  }
   const dec=f.decisao.value;
   if(dec==="Indeferido"&&!f.justificacao.value.trim()){alert("Indique a justificação do indeferimento.");f.justificacao.focus();return}
   if(editId){
@@ -1222,11 +1337,13 @@ async function guardar(e){
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
     autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
+    periodoIni:f.periodoIni.value,periodoFim:f.periodoFim.value,
     tipoPedido:adenda?"Adenda":"Novo",adendaDe:adenda?(original(f.adendaDe.value)?.nAut||f.adendaDe.value.trim()):"",
     nAut:!adenda&&dec==="Autorizado"?f.nAut.value.trim():"",dtProc:f.dtProc.value,dtEmissao:f.dtEmissao.value,dtEnvio:f.dtEnvio.value,validade:dec==="Autorizado"?f.validade.value:"",dtOficio:"",observacoes:f.observacoes.value,
     criado:ant?.criado||agora,criadoPor:ant?.criadoPor||sess.nome,criadoPorEmail:ant?.criadoPorEmail||sess.email,
     alterado:agora,alteradoPor:sess.nome,alteradoPorEmail:sess.email,apagado:false
   };
+  marcarEtapas(r,ant,editId?null:_origem);_origem="manual";
   const ref=editId?col.doc(editId):col.doc();
   ref.set(r).catch(err=>alert("Erro ao gravar: "+err.message));
   const nA=r.nAut&&(!antes||antes.nAut!==r.nAut)?" · Autorização "+r.nAut:"";
@@ -1258,7 +1375,7 @@ function getFiltros(){
   return o;
 }
 function nFiltros(F){
-  let n=0;["distribuicao","nPedido","nAut","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst","tipo"].forEach(k=>{if(F[k])n++});
+  let n=0;["distribuicao","nPedido","nAut","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst","tipo","fase","qual"].forEach(k=>{if(F[k])n++});
   return n+["AS","TS","AA","TA","DC"].filter(k=>F[k].length).length;
 }
 const contem=(txt,s)=>!s||String(txt||"").toLowerCase().includes(s.toLowerCase());
@@ -1289,6 +1406,8 @@ function filtrar(F){
     if(F.tMin!==""||F.tMax!==""){const t=dias(r.dtDRP,r.dtDRPM);if(t===null)return false;if(F.tMin!==""&&t<+F.tMin)return false;if(F.tMax!==""&&t>+F.tMax)return false}
     if(F.dDe||F.dAte){const d=r[F.dCampo];if(!d)return false;if(F.dDe&&d<F.dDe)return false;if(F.dAte&&d>F.dAte)return false}
     if(F.dup&&!dupSet().has(r.id))return false;
+    if(F.fase!==""&&F.fase!=null&&faseDe(r)!==+F.fase)return false;
+    if(F.qual){const q=QUAL.find(x=>x[0]===F.qual);if(q&&!q[2](r))return false}
     if(F.tipo==="Adenda"&&!ehAdenda(r))return false;
     if(F.tipo==="Novo"&&ehAdenda(r))return false;
     if(F.tipo==="comAd"&&!adendasDe(r).length)return false;
@@ -1321,6 +1440,15 @@ function aplicarFiltro(tipo,valor){
   else if(tipo==="decisao")sel("decisao").value=valor;
   else if(tipo==="mes"){const [a,m]=valor.split("-");sel("dCampo").value="dataEntrada";sel("dDe").value=`${a}-${m}-01`;
     sel("dAte").value=`${a}-${m}-${String(new Date(+a,+m,0).getDate()).padStart(2,"0")}`}
+  else if(tipo==="pendIdade"){const [a,b]=valor;sel("decisao").value="Pendente";sel("dCampo").value="dataEntrada";
+    const d=n=>{const x=new Date(hoje());x.setDate(x.getDate()-n);return x.toISOString().slice(0,10)};
+    sel("dAte").value=d(a);if(b<1e8)sel("dDe").value=d(b)}
+  else if(tipo==="fase")sel("fase").value=String(valor);
+  else if(tipo==="qual")sel("qual").value=valor;
+  else if(tipo==="areaArte"){const [a,t]=valor.split("|");setChk("fAS",[a]);setChk("fTS",[t])}
+  else if(tipo==="areaArteAut"){const [a,t]=valor.split("|");setChk("fAA",[a]);setChk("fTA",[t])}
+  else if(tipo==="titular")sel("titular").value=valor;
+  else if(tipo==="embarcacao")sel("embarcacao").value=valor;
   else if(tipo==="ano"){sel("dCampo").value="dataEntrada";sel("dDe").value=valor+"-01-01";sel("dAte").value=valor+"-12-31"}
   $("#adv").classList.remove("hide");tab("lista");render();
   toast("Filtro aplicado");
@@ -1354,7 +1482,7 @@ function render(){
   const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
-    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}</td>
+    <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}${r.periodoIni||r.periodoFim?`<div class="small">📅 ${fmt(r.periodoIni)||"…"} a ${fmt(r.periodoFim)||"…"}</div>`:""}</td>
     <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${ehAdenda(r)?`<div><span class="tag t-ad">Adenda à ${esc(r.adendaDe)}</span></div>`:r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}${adendasDe(r).length?` · <b>${adendasDe(r).length} adenda${adendasDe(r).length>1?"s":""}</b>`:""}</div>`:""}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?valTag(vigente(r)):""}</td></tr>`).join("")
     :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
@@ -1383,6 +1511,124 @@ function dtEmiCel(r){
   else if(e&&r.decisao!=="Pendente")h+=`<div class="small" style="color:var(--warn)">por enviar</div>`;
   return h;
 }
+/* ---- tempos de tramitação ---- */
+function temposDe(r){
+  const ok=x=>x!==null&&x>=0?x:null;
+  const proc=ok(dias(r.dataEntrada,r.dtProc)),env=ok(dias(r.dataEntrada,r.dtEnvio));
+  let semDrp=null;
+  if(proc!==null){
+    if(!r.dtDRP)semDrp=proc;                       // nunca foi à DRP
+    else if(r.dtDRPM){const d=ok(dias(r.dtDRP,r.dtDRPM));if(d!==null)semDrp=ok(proc-d)}
+  }
+  return {proc,semDrp,env};
+}
+const FAIXAS=[["0–15",0,15],["16–30",16,30],["31–60",31,60],["61–90",61,90],["91–180",91,180],["> 180",181,1e9]];
+const IND_T=[["proc","Entrada → processamento","--s1"],["semDrp","Entrada → processamento, sem o tempo na DRP","--s2"],["env","Entrada → envio ao requerente","--s3"]];
+function estat(v){
+  v=v.filter(x=>x!==null).sort((a,b)=>a-b);const n=v.length;if(!n)return {n:0};
+  const med=n%2?v[(n-1)/2]:(v[n/2-1]+v[n/2])/2;
+  return {n,media:v.reduce((a,b)=>a+b,0)/n,med,min:v[0],max:v[n-1],ate30:v.filter(x=>x<=30).length/n};
+}
+function temposHTML(lst){
+  const T=lst.map(temposDe),f=x=>x==null?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
+  const linhas=IND_T.map(([k,l,c])=>{const e=estat(T.map(t=>t[k]));return `<tr><td><span class="sw" style="background:${css(c)}"></span>${l}</td>
+    <td class="n">${e.n}</td><td class="n">${f(e.media)}</td><td class="n">${f(e.med)}</td><td class="n">${e.n?e.min:"—"}</td><td class="n">${e.n?e.max:"—"}</td><td class="n">${e.n?Math.round(e.ate30*100)+"%":"—"}</td></tr>`}).join("");
+  return `<h3>⏱ Tempos de tramitação (dias)</h3>
+   <div style="overflow-x:auto"><table class="ttab"><thead><tr><th>Indicador</th><th class="n">Pedidos</th><th class="n">Média</th><th class="n">Mediana</th><th class="n">Mín.</th><th class="n">Máx.</th><th class="n">≤ 30 dias</th></tr></thead><tbody>${linhas}</tbody></table></div>
+   <p class="small" style="margin:8px 0 0">Só entram os pedidos com as duas datas preenchidas. <b>Sem o tempo na DRP</b>: desconta os dias entre o envio à DRP e o envio à DRPM (pedidos que estão na DRP sem data de regresso ficam de fora; pedidos que não foram à DRP contam o tempo completo).</p>`;
+}
+/* ================= ESTATÍSTICAS ================= */
+const FASES=["Registado — por enviar à DRP","Na DRP","Em análise (após DRP)","Enviado para assinatura","Assinado, por enviar","Enviado ao requerente"];
+function faseDe(r){
+  if(r.dtEnvio)return 5;if(dtAss(r))return 4;if(r.dtProc)return 3;
+  if(r.dtDRPM)return 2;if(r.dtDRP)return 1;return 0;
+}
+let _sobCache=null;
+function sobSet(){ // pedidos com outro pedido da mesma embarcação, áreas/artes em comum e período sobreposto
+  if(_sobCache)return _sobCache;const st=new Set(),pares_=[];
+  dados.forEach(r=>{relacionados({...r,solMap:mapa(r,"sol")},r.id).forEach(x=>{if(x.conflito){st.add(r.id);
+    const k=[r.id,x.rec.id].sort().join("|");if(!pares_.some(p=>p.k===k)){const q=[r.id,x.rec.id,x];q.k=k;pares_.push(q)}}})});
+  _sobCache=st;_sobCache.pares=pares_;return st;
+}
+const QUAL=[
+  ["semEntrada","Sem Data Entrada",r=>!r.dataEntrada],
+  ["semAreas","Sem áreas/artes solicitadas",r=>!pares(mapa(r,"sol")).length],
+  ["semPeriodo","Sem período pedido",r=>!r.periodoIni&&!r.periodoFim],
+  ["semDUP","Sem DUP",r=>!(r.docs||[]).includes("DUP")],
+  ["semDocs","Documentação incompleta (DUP/CN/TP)",r=>!docsCompleto(r)],
+  ["semNIF","Sem NIF do requerente",r=>!r.nif],
+  ["semProc","Decidido sem Dt. processamento",r=>(r.decisao==="Autorizado"||r.decisao==="Indeferido")&&!r.dtProc],
+  ["semEmissao","Decidido sem Dt. emissão",r=>(r.decisao==="Autorizado"||r.decisao==="Indeferido")&&!dtAss(r)],
+  ["semEnvio","Autorizado sem data de envio",r=>r.decisao==="Autorizado"&&!r.dtEnvio],
+  ["semNAut","Autorizado sem N.º de Autorização",r=>r.decisao==="Autorizado"&&!ehAdenda(r)&&!r.nAut],
+  ["semValidade","Autorizado sem validade",r=>r.decisao==="Autorizado"&&!r.validade],
+  ["semJust","Indeferido sem justificação",r=>r.decisao==="Indeferido"&&!r.justificacao],
+  ["dup","Possíveis duplicados",r=>dupSet().has(r.id)],
+  ["sob","Áreas/artes em comum com período sobreposto",r=>sobSet().has(r.id)]];
+function eixoMeses(datas){
+  datas=datas.filter(Boolean).sort();
+  if(!datas.length)return {labels:[],keys:[],modo:"mes"};
+  let [a0,m0]=datas[0].split("-").map(Number);const [a1,m1]=datas[datas.length-1].split("-").map(Number);
+  const n=(a1-a0)*12+(m1-m0)+1;
+  if(n>36){const keys=[];for(let a=a0;a<=a1;a++)keys.push(String(a));return {keys,labels:keys,modo:"ano"}}
+  const keys=[],labels=[];for(let i=0;i<n;i++){keys.push(`${a0}-${String(m0).padStart(2,"0")}`);labels.push(`${MESES[m0-1]}/${String(a0).slice(2)}`);if(++m0>12){m0=1;a0++}}
+  return {keys,labels,modo:"mes"};
+}
+const media=v=>{v=v.filter(x=>x!==null&&x!==undefined);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null};
+const pct=(a,b)=>b?Math.round(a/b*100):null;
+const decididos=l=>l.filter(r=>r.decisao==="Autorizado"||r.decisao==="Indeferido");
+function emVigor(r,data){ // autorização (original) em vigor numa data, considerando adendas
+  if(ehAdenda(r)||r.decisao!=="Autorizado")return null;
+  const v=vigente(r),ini=dtAss(r)||dtAss(v)||"",fim=v.validade||r.validade||"";
+  if(ini&&data<ini)return null;if(fim&&data>fim)return null;if(!ini&&!fim)return null;
+  return v;
+}
+const tiles=t=>`<div class="stats">${t.map(([v,l,c])=>`<div class="stat"><b${c?` style="color:var(${c})"`:""}>${v}</b><span>${l}</span></div>`).join("")}</div>`;
+const fmtN=x=>x==null?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
+const btnVer=(tipo,val)=>`<button class="noprint" onclick='aplicarFiltro(${esc(JSON.stringify(tipo))},${esc(JSON.stringify(val)).replace(/'/g,"&#39;")})'>Ver</button>`;
+let hmModo="sol",frotaData=null,desPer="";
+function heatmapHTML(lst){
+  const data=hoje(),cnt={};let mx=0;
+  lst.forEach(r=>{let m;
+    if(hmModo==="sol")m=mapa(r,"sol");else if(hmModo==="aut")m=r.decisao==="Autorizado"&&!ehAdenda(r)?mapa(vigente(r),"aut"):null;else{const v=emVigor(r,data);m=v?mapa(v,"aut"):null}
+    if(!m)return;Object.entries(m).forEach(([a,ts])=>ts.forEach(t=>{const k=a+"|"+t;cnt[k]=(cnt[k]||0)+1;mx=Math.max(mx,cnt[k])}))});
+  const S=css("--s1"),cel=(a,t)=>{const n=cnt[a+"|"+t]||0;if(!n)return `<td class="z">·</td>`;const al=.12+.88*n/mx;
+    return `<td title="Área ${a} · ${nomeArte(t)}: ${n}" style="background:color-mix(in srgb, ${S} ${Math.round(al*100)}%, transparent);color:${al>.55?"#fff":"var(--ink)"}" onclick='aplicarFiltro("${hmModo==="sol"?"areaArte":"areaArteAut"}","${a}|${t}")'>${n}</td>`};
+  return `<div class="chips-inline noprint"><label class="small">Mostrar: <select onchange="hmModo=this.value;renderCharts()">
+    <option value="sol" ${hmModo==="sol"?"selected":""}>Pedidos (áreas/artes solicitadas)</option><option value="aut" ${hmModo==="aut"?"selected":""}>Autorizações (todas, situação em vigor)</option>
+    <option value="vig" ${hmModo==="vig"?"selected":""}>Autorizações em vigor hoje</option></select></label><span class="small">Clique numa célula para ver os pedidos.</span></div>
+   <div class="gwrap"><table class="hm"><thead><tr><th class="ar">Área</th>${ARTES.map(t=>`<th title="${esc(nomeArte(t))}">${esc(abr(t))}</th>`).join("")}<th>Total</th></tr></thead><tbody>${
+    AREAS.map(a=>`<tr><th class="ar">${a} <span class="small">${esc(AREA_NOME[a]||"")}</span></th>${ARTES.map(t=>cel(a,t)).join("")}<td class="z" style="font-weight:600;color:var(--ink)">${ARTES.reduce((s,t)=>s+(cnt[a+"|"+t]||0),0)||"·"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function frotaHTML(lst){
+  const data=frotaData||hoje(),por={};
+  lst.forEach(r=>{const v=emVigor(r,data);if(!v)return;Object.keys(mapa(v,"aut")).forEach(a=>{(por[a]=por[a]||[]).push({r,v})})});
+  const tot=new Set(Object.values(por).flat().map(x=>normCod(x.v.cjId||x.v.embarcacao||x.r.id))).size;
+  return `<div class="chips-inline noprint"><label class="small">Em vigor em: <input type="date" value="${data}" onchange="frotaData=this.value;renderCharts()"></label></div>
+   <p class="small">${tot} embarcação(ões) com autorização em vigor em ${fmt(data)}.</p>
+   <div class="gwrap"><table class="gtab"><thead><tr><th>Área</th><th class="n">Embarcações</th><th>Embarcação · artes autorizadas · validade</th></tr></thead><tbody>${
+    AREAS.filter(a=>por[a]).map(a=>`<tr><td><b>${a}</b> <span class="small">${esc(AREA_NOME[a]||"")}</span></td><td class="n">${por[a].length}</td><td>${por[a].map(({r,v})=>`${esc(v.embarcacao||r.embarcacao||"—")}${v.cjId?` <span class="small">${esc(v.cjId)}</span>`:""} · ${esc(mapa(v,"aut")[a].map(abr).join(", "))} · <span class="small">até ${fmt(v.validade)||"…"}</span>`).join("<br>")}</td></tr>`).join("")
+    ||'<tr><td colspan="3" class="empty">Nenhuma autorização em vigor nesta data.</td></tr>'}</tbody></table></div>`;
+}
+function topHTML(lst,campo,rot){
+  const g={};lst.forEach(r=>{const k=(campo==="embarcacao"?(r.embarcacao||r.cjId):r[campo])||"";if(!k)return;const n=campo==="embarcacao"?(normCod(r.cjId)||norm(k)):norm(k);
+    (g[n]=g[n]||{nome:k,cj:r.cjId,p:0,a:0,i:0,ad:0});g[n].p++;if(r.decisao==="Autorizado")g[n].a++;if(r.decisao==="Indeferido")g[n].i++;if(ehAdenda(r))g[n].ad++});
+  const top=Object.values(g).sort((a,b)=>b.p-a.p).slice(0,10);
+  return `<div class="gwrap"><table class="gtab"><thead><tr><th>${rot}</th><th class="n">Pedidos</th><th class="n">Autorizados</th><th class="n">Indeferidos</th><th class="n">Adendas</th><th class="noprint"></th></tr></thead><tbody>${
+    top.map(x=>`<tr><td>${esc(x.nome)}${campo==="embarcacao"&&x.cj?` <span class="small">${esc(x.cj)}</span>`:""}</td><td class="n">${x.p}</td><td class="n">${x.a}</td><td class="n">${x.i}</td><td class="n">${x.ad}</td><td class="noprint">${btnVer(campo,x.nome)}</td></tr>`).join("")||'<tr><td colspan="6" class="empty">Sem dados.</td></tr>'}</tbody></table></div>`;
+}
+function anosHTML(lst){
+  const anos=[...new Set(lst.map(r=>(r.dataEntrada||"").slice(0,4)).filter(Boolean))].sort();
+  const L=anos.map(a=>{const l=lst.filter(r=>(r.dataEntrada||"").startsWith(a)),d=decididos(l),T=l.map(temposDe);
+    return {a,n:l.length,au:l.filter(r=>r.decisao==="Autorizado").length,ind:l.filter(r=>r.decisao==="Indeferido").length,pe:l.filter(r=>(r.decisao||"Pendente")==="Pendente").length,
+      ad:l.filter(ehAdenda).length,tx:pct(d.filter(r=>r.decisao==="Autorizado").length,d.length),tp:media(T.map(t=>t.proc)),ts:media(T.map(t=>t.semDrp)),te:media(T.map(t=>t.env))}});
+  const v=(cur,prev,inv)=>{if(cur==null||prev==null||!prev)return "";const d=Math.round((cur-prev)/prev*100);if(!d)return ' <span class="small">=</span>';
+    const mau=inv?d>0:d<0;return ` <span class="small ${mau?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}%</span>`};
+  return `<div class="gwrap"><table class="gtab"><thead><tr><th>Ano de entrada</th><th class="n">Pedidos</th><th class="n">Autorizados</th><th class="n">Indeferidos</th><th class="n">Pendentes</th><th class="n">Adendas</th><th class="n">Taxa autoriz.</th><th class="n">Média até proc.</th><th class="n">Média s/ DRP</th><th class="n">Média até envio</th></tr></thead><tbody>${
+    L.map((x,i)=>{const p=L[i-1]||{};return `<tr><td><b>${x.a}</b></td><td class="n">${x.n}${v(x.n,p.n)}</td><td class="n">${x.au}</td><td class="n">${x.ind}</td><td class="n">${x.pe}</td><td class="n">${x.ad}</td><td class="n">${x.tx==null?"—":x.tx+"%"}</td>
+      <td class="n">${fmtN(x.tp)}${v(x.tp,p.tp,true)}</td><td class="n">${fmtN(x.ts)}${v(x.ts,p.ts,true)}</td><td class="n">${fmtN(x.te)}${v(x.te,p.te,true)}</td></tr>`}).join("")||'<tr><td colspan="10" class="empty">Sem dados.</td></tr>'}</tbody></table></div>
+   <p class="small" style="margin:6px 0 0">Variação face ao ano anterior. Nos tempos, ▲ a vermelho significa que demorou mais; ▼ a verde, menos.</p>`;
+}
 function statsHTML(lst){
   const ds=dupSet(),nd=lst.filter(r=>ds.has(r.id)).length;
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
@@ -1396,7 +1642,8 @@ function statsHTML(lst){
     <div class="stat"><b style="color:var(--bad)">${n("Indeferido")}</b><span>✖ Indeferidos</span></div>
     <div class="stat"><b>${taxa}</b><span>Taxa de autorização</span></div>
     <div class="stat"><b>${media}</b><span>Tempo médio na DRP</span></div>
-    <div class="stat"><b>${naDRP}</b><span>Atualmente na DRP</span></div>`+
+    <div class="stat"><b>${naDRP}</b><span>Atualmente na DRP</span></div>
+    <div class="stat"><b>${(e=>e.n?Math.round(e.media)+" d":"—")(estat(lst.map(r=>temposDe(r).env)))}</b><span>Tempo médio até envio</span></div>`+
     (nd?`<div class="stat click" onclick="verDuplicados()" title="Ver possíveis duplicados"><b style="color:var(--bad)">⚠ ${nd}</b><span>Possíveis duplicados</span></div>`:"");
 }
 $$("th[data-k]").forEach(th=>th.onclick=()=>{const k=th.dataset.k;ordem.dir=ordem.k===k?-ordem.dir:1;ordem.k=k;render()});
@@ -1427,55 +1674,189 @@ function porPeriodo(lst){
   for(let i=0;i<nMeses;i++){keys.push(`${a0}-${String(m0).padStart(2,"0")}`);labels.push(`${MESES[m0-1]}/${String(a0).slice(2)}`);m0++;if(m0>12){m0=1;a0++}}
   return {keys,labels,modo:"mes"};
 }
+const GSEC=[["geral","Geral"],["utilizadores","Por utilizador"],["tempos","Tempos"],["processo","Processo e pendências"],["drp","DRP"],["decisoes","Decisões"],["areas","Áreas e frota"],["validade","Validade e adendas"],["qualidade","Qualidade dos dados"],["anos","Comparação entre anos"],["todas","Todas"]];
+let gSec=(()=>{try{return localStorage.getItem("pp_gsec")||"geral"}catch(e){return "geral"}})();
+function setGSec(k){gSec=k;ls("pp_gsec",k);renderCharts()}
 function renderCharts(){
-  if(typeof Chart==="undefined"){$("#charts").innerHTML='<p class="empty">Não foi possível carregar a biblioteca de gráficos (sem internet?).</p>';return}
+  if(gSec==="utilizadores"&&sess.role!=="admin")gSec="geral";
+  $("#gSecs").innerHTML=GSEC.filter(([k])=>k!=="utilizadores"||sess.role==="admin").map(([k,l])=>`<button class="${k===gSec?"on":""}" onclick="setGSec('${k}')">${l}</button>`).join("");
+  if(typeof Chart==="undefined"){$("#gCorpo").innerHTML='<p class="empty">Não foi possível carregar a biblioteca de gráficos (sem internet?).</p>';return}
   const pesq=$("#gFonte").value==="pesq",lst=pesq?filtrar():dados;
   const F=getFiltros(),n=nFiltros(F)+(F.q?1:0);
   $("#gInfo").textContent=pesq?`${lst.length} pedidos${n?` · ${n} critério(s) de pesquisa ativo(s)`:" · sem filtros (todos)"}`:`${lst.length} pedidos`;
   $("#pesquisa").classList.toggle("hide",!pesq&&!$("#graficos").classList.contains("hide"));
   $("#gStats").innerHTML=statsHTML(lst);
 
-  const S1=css("--s1"),S2=css("--s2"),TXT=css("--muted"),GRID=css("--grid"),INK=css("--ink");
-  const ok=css("--st-good"),bad=css("--st-bad"),warn=css("--st-warn");
-
+  const S1=css("--s1"),S2=css("--s2"),S3=css("--s3"),TXT=css("--muted"),GRID=css("--grid"),INK=css("--ink");
+  const ok=css("--st-good"),bad=css("--st-bad"),warn=css("--st-warn"),HOJE=hoje(),LIM=limiteDRP();
+  const quer=k=>(gSec==="todas"||gSec===k)&&(k!=="utilizadores"||sess.role==="admin");
+  const secs=[];const S=(k,blocos,defs)=>{if(quer(k))secs.push({k,tit:GSEC.find(x=>x[0]===k)[1],blocos,defs})};
   const P=porPeriodo(lst);
-  const perCount=P.keys.map(k=>lst.filter(r=>(r.dataEntrada||"").startsWith(k)).length);
-  const perTempo=P.keys.map(k=>{const t=lst.filter(r=>(r.dataEntrada||"").startsWith(k)).map(r=>dias(r.dtDRP,r.dtDRPM)).filter(x=>x!==null&&x>=0);return t.length?Math.round(t.reduce((a,b)=>a+b,0)/t.length):null});
-  const lstR=lst.map(r=>{const s=resumoMap(mapa(r,"sol")),a=resumoMap(mapa(r,"aut"));return {areasSol:s.areas,artesSol:s.artes,areasAut:a.areas,artesAut:a.artes}});
-  const aS=contar(lstR,"areasSol",AREAS),aA=contar(lstR,"areasAut",AREAS);
-  const tS=contar(lstR,"artesSol",ARTES),tA=contar(lstR,"artesAut",ARTES);
-  const dec=["Pendente","Autorizado","Indeferido"].map(d=>lst.filter(r=>(r.decisao||"Pendente")===d).length);
-  let paises=Object.entries(contar(lst,"pais")).sort((a,b)=>b[1]-a[1]);
-  if(paises.length>10){const outros=paises.slice(9).reduce((s,x)=>s+x[1],0);paises=[...paises.slice(0,9),["Outros",outros]]}
-  // taxa de autorização por área (só decididos)
-  const taxaArea=AREAS.map(a=>{const d=lst.filter(r=>(r.areasSol||[]).includes(a)&&(r.decisao==="Autorizado"||r.decisao==="Indeferido"));
-    return d.length?Math.round(d.filter(r=>(r.areasAut||[]).includes(a)).length/d.length*100):null});
+  const per=P.modo==="mes"?"mês":"ano";
 
-  const defs=[
-    {id:"c1",tit:`Pedidos entrados por ${P.modo==="mes"?"mês":"ano"}`,sub:"Data Entrada",type:"bar",labels:P.labels,
-      ds:[{label:"Pedidos",data:perCount,color:S1}],click:i=>aplicarFiltro(P.modo,P.keys[i])},
-    {id:"c2",tit:"Decisão",sub:"N.º de pedidos",type:"bar",horiz:true,labels:["Pendente","✔ Autorizado","✖ Indeferido"],
-      ds:[{label:"Pedidos",data:dec,color:[warn,ok,bad]}],click:i=>aplicarFiltro("decisao",["Pendente","Autorizado","Indeferido"][i])},
-    {id:"c3",tit:"Áreas: solicitadas vs autorizadas",sub:"N.º de pedidos",type:"bar",labels:AREAS,
-      ds:[{label:"Solicitadas",data:AREAS.map(a=>aS[a]),color:S1},{label:"Autorizadas",data:AREAS.map(a=>aA[a]),color:S2}],
-      click:(i,d)=>aplicarFiltro(d===0?"areaSol":"areaAut",AREAS[i])},
-    {id:"c4",tit:"Artes: solicitadas vs autorizadas",sub:"N.º de pedidos",type:"bar",horiz:true,labels:ARTES.map(nomeArte),
-      ds:[{label:"Solicitadas",data:ARTES.map(a=>tS[a]),color:S1},{label:"Autorizadas",data:ARTES.map(a=>tA[a]),color:S2}],
-      click:(i,d)=>aplicarFiltro(d===0?"arteSol":"arteAut",ARTES[i])},
-    {id:"c5",tit:"Pedidos por país",sub:paises.length>=10?"10 principais":"N.º de pedidos",type:"bar",horiz:true,labels:paises.map(p=>p[0]),
-      ds:[{label:"Pedidos",data:paises.map(p=>p[1]),color:S1}],click:i=>{const p=paises[i][0];if(p!=="Outros"&&p!=="(sem país)")aplicarFiltro("pais",p)}},
-    {id:"c6",tit:`Tempo médio na DRP por ${P.modo==="mes"?"mês":"ano"} de entrada`,sub:"Dias",type:"bar",labels:P.labels,unit:" d",
-      ds:[{label:"Tempo médio (dias)",data:perTempo,color:S1}],click:i=>aplicarFiltro(P.modo,P.keys[i])},
-    {id:"c7",tit:"Taxa de autorização por área",sub:"% dos pedidos decididos que incluíam a área",type:"bar",labels:AREAS,unit:"%",max:100,
-      ds:[{label:"% autorizada",data:taxaArea,color:S1}],click:i=>aplicarFiltro("areaSol",AREAS[i])},
-  ];
+  /* ---- GERAL ---- */
+  if(quer("geral")){
+    const perCount=P.keys.map(k=>lst.filter(r=>(r.dataEntrada||"").startsWith(k)).length);
+    const lstR=lst.map(r=>{const s=resumoMap(mapa(r,"sol")),a=resumoMap(mapa(r,"aut"));return {areasSol:s.areas,artesSol:s.artes,areasAut:a.areas,artesAut:a.artes}});
+    const aS=contar(lstR,"areasSol",AREAS),aA=contar(lstR,"areasAut",AREAS),tS=contar(lstR,"artesSol",ARTES),tA=contar(lstR,"artesAut",ARTES);
+    const dec=["Pendente","Autorizado","Indeferido"].map(d=>lst.filter(r=>(r.decisao||"Pendente")===d).length);
+    S("geral",[],[
+      {id:"c1",tit:`Pedidos entrados por ${per}`,sub:"Data Entrada",labels:P.labels,ds:[{label:"Pedidos",data:perCount,color:S1}],click:i=>aplicarFiltro(P.modo,P.keys[i])},
+      {id:"c2",tit:"Decisão",sub:"N.º de pedidos",horiz:true,labels:["Pendente","✔ Autorizado","✖ Indeferido"],ds:[{label:"Pedidos",data:dec,color:[warn,ok,bad]}],click:i=>aplicarFiltro("decisao",["Pendente","Autorizado","Indeferido"][i])},
+      {id:"c3",tit:"Áreas: solicitadas vs autorizadas",sub:"N.º de pedidos",labels:AREAS,ds:[{label:"Solicitadas",data:AREAS.map(a=>aS[a]),color:S1},{label:"Autorizadas",data:AREAS.map(a=>aA[a]),color:S2}],click:(i,d)=>aplicarFiltro(d===0?"areaSol":"areaAut",AREAS[i])},
+      {id:"c4",tit:"Artes: solicitadas vs autorizadas",sub:"N.º de pedidos",horiz:true,labels:ARTES.map(nomeArte),ds:[{label:"Solicitadas",data:ARTES.map(a=>tS[a]),color:S1},{label:"Autorizadas",data:ARTES.map(a=>tA[a]),color:S2}],click:(i,d)=>aplicarFiltro(d===0?"arteSol":"arteAut",ARTES[i])}]);
+  }
+  /* ---- TEMPOS ---- */
+  if(quer("tempos")){
+    const nomes=["Até processamento","Até processamento (sem DRP)","Até envio ao requerente"];
+    S("tempos",[`<div class="gblk">${temposHTML(lst)}</div>`],[
+      {id:"c8",tit:`Tempos médios por ${per} de entrada`,sub:"Dias",labels:P.labels,unit:" d",
+        ds:IND_T.map(([k],j)=>({label:nomes[j],color:[S1,S2,S3][j],data:P.keys.map(pk=>{const e=estat(lst.filter(r=>(r.dataEntrada||"").startsWith(pk)).map(r=>temposDe(r)[k]));return e.n?Math.round(e.media):null})})),click:i=>aplicarFiltro(P.modo,P.keys[i])},
+      {id:"c9",tit:"Distribuição dos tempos",sub:"N.º de pedidos por intervalo de dias",labels:FAIXAS.map(x=>x[0]),
+        ds:IND_T.map(([k],j)=>({label:nomes[j],color:[S1,S2,S3][j],data:FAIXAS.map(([,a,b])=>lst.map(r=>temposDe(r)[k]).filter(x=>x!==null&&x>=a&&x<=b).length)}))}]);
+  }
+  /* ---- PROCESSO E PENDÊNCIAS ---- */
+  if(quer("processo")){
+    const pend=lst.filter(r=>(r.decisao||"Pendente")==="Pendente");
+    const IDADE=[["≤ 30 dias",0,30],["31–60",31,60],["61–90",61,90],["91–180",91,180],["> 180",181,1e9]];
+    const idades=pend.map(r=>r.dataEntrada?dias(r.dataEntrada,HOJE):null);
+    const fases=FASES.map((_,i)=>lst.filter(r=>faseDe(r)===i).length);
+    const E=eixoMeses([...lst.map(r=>r.dataEntrada),...lst.map(dtAss),...lst.map(r=>r.dtEnvio)]);
+    const conta=(fn)=>E.keys.map(k=>lst.filter(r=>(fn(r)||"").startsWith(k)).length);
+    const ent=conta(r=>r.dataEntrada),ass=conta(dtAss),env=conta(r=>r.dtEnvio);
+    const saldo=ent.reduce((s,x)=>s+x,0)-env.reduce((s,x)=>s+x,0);
+    S("processo",[`<div class="gblk"><h3>Pendências</h3>${tiles([[pend.length,"Pendentes","--warn"],[idades.filter(x=>x!==null&&x>90).length,"Pendentes há mais de 90 dias","--bad"],
+      [fmtN(media(idades)),"Antiguidade média (dias)"],[Math.max(0,...idades.filter(x=>x!==null)),"Pendente mais antigo (dias)"],[saldo,"Entradas − enviados (no período)"]])}</div>`],[
+      {id:"c10",tit:"Pendentes por antiguidade",sub:"Dias desde a Data Entrada",labels:IDADE.map(x=>x[0]),ds:[{label:"Pendentes",data:IDADE.map(([,a,b])=>idades.filter(x=>x!==null&&x>=a&&x<=b).length),color:S1}],click:i=>aplicarFiltro("pendIdade",[IDADE[i][1],IDADE[i][2]])},
+      {id:"c11",tit:"Fase atual dos pedidos",sub:"N.º de pedidos",horiz:true,labels:FASES,ds:[{label:"Pedidos",data:fases,color:S1}],click:i=>aplicarFiltro("fase",i)},
+      {id:"c12",tit:`Entradas e saídas por ${E.modo==="mes"?"mês":"ano"}`,sub:"N.º de pedidos",labels:E.labels,
+        ds:[{label:"Entrados",data:ent,color:S1},{label:"Assinados",data:ass,color:S2},{label:"Enviados ao requerente",data:env,color:S3}]}]);
+  }
+  /* ---- DRP ---- */
+  if(quer("drp")){
+    const drp=lst.filter(r=>r.dtDRP),E=eixoMeses(drp.map(r=>r.dtDRP));
+    const tDrp=r=>r.dtDRPM?dias(r.dtDRP,r.dtDRPM):dias(r.dtDRP,HOJE);
+    const conc=drp.filter(r=>r.dtDRPM&&dias(r.dtDRP,r.dtDRPM)>=0);
+    const acima=drp.filter(r=>tDrp(r)>LIM).length;
+    const peso=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?dias(r.dtDRP,r.dtDRPM):null;return t.env&&d!==null&&d>=0?d/t.env*100:null}));
+    const pesoP=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?dias(r.dtDRP,r.dtDRPM):null;return t.proc&&d!==null&&d>=0?d/t.proc*100:null}));
+    S("drp",[`<div class="gblk"><h3>DRP</h3>${tiles([[drp.length,"Pedidos enviados à DRP"],[drp.filter(r=>!r.dtDRPM).length,"Atualmente na DRP","--warn"],
+      [fmtN(media(conc.map(r=>dias(r.dtDRP,r.dtDRPM)))),"Tempo médio na DRP (dias)"],[`${acima} (${pct(acima,drp.length)??0}%)`,`Acima do limite de ${LIM} dias`,"--bad"],
+      [peso==null?"—":Math.round(peso)+"%","Peso da DRP no tempo até envio"],[pesoP==null?"—":Math.round(pesoP)+"%","Peso da DRP no tempo até processamento"]])}
+      <p class="small" style="margin:8px 0 0">O peso é a parte do tempo de cada pedido passada na DRP (média dos pedidos com as datas necessárias). O limite de dias altera-se no aviso da lista de pedidos.</p></div>`],[
+      {id:"c13",tit:`Tempo médio na DRP por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,sub:"Dias (pedidos já devolvidos)",labels:E.labels,unit:" d",
+        ds:[{label:"Tempo médio",data:E.keys.map(k=>{const v=conc.filter(r=>r.dtDRP.startsWith(k)).map(r=>dias(r.dtDRP,r.dtDRPM));return v.length?Math.round(media(v)):null}),color:S1}]},
+      {id:"c14",tit:`Pedidos acima do limite na DRP (${LIM} dias)`,sub:`% por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,labels:E.labels,unit:"%",max:100,
+        ds:[{label:"% acima do limite",data:E.keys.map(k=>{const v=drp.filter(r=>r.dtDRP.startsWith(k));return v.length?pct(v.filter(r=>tDrp(r)>LIM).length,v.length):null}),color:S2}]}]);
+  }
+  /* ---- DECISÕES ---- */
+  if(quer("decisoes")){
+    const dec=decididos(lst),txA=AREAS.map(a=>{const d=dec.filter(r=>mapa(r,"sol")[a]);return d.length?pct(d.filter(r=>mapa(r,"aut")[a]).length,d.length):null});
+    const txT=ARTES.map(t=>{const d=dec.filter(r=>Object.values(mapa(r,"sol")).some(x=>x.includes(t)));return d.length?pct(d.filter(r=>Object.values(mapa(r,"aut")).some(x=>x.includes(t))).length,d.length):null});
+    const gp={};dec.forEach(r=>{const k=r.pais||"(sem país)";(gp[k]=gp[k]||{n:0,a:0}).n++;if(r.decisao==="Autorizado")gp[k].a++});
+    const paises=Object.entries(gp).sort((a,b)=>b[1].n-a[1].n).slice(0,10);
+    const aut=lst.filter(r=>r.decisao==="Autorizado"),cortes={};let parciais=0;
+    aut.forEach(r=>{const so=pares(mapa(r,"sol")),au=pares(mapa(r,"aut"));const f=so.filter(x=>!au.includes(x));if(f.length&&au.length){parciais++;f.forEach(x=>cortes[x]=(cortes[x]||0)+1)}});
+    const topC=Object.entries(cortes).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const ind=lst.filter(r=>r.decisao==="Indeferido"),mot={};
+    ind.forEach(r=>{const t=(r.justificacao||"(sem justificação)").trim(),k=norm(t).slice(0,90);(mot[k]=mot[k]||{t,n:0}).n++});
+    const topM=Object.values(mot).sort((a,b)=>b.n-a.n).slice(0,10);
+    S("decisoes",[`<div class="gblk"><h3>Autorizações parciais</h3>${tiles([[aut.length,"Autorizados"],[`${parciais} (${pct(parciais,aut.length)??0}%)`,"Com menos áreas/artes do que as pedidas","--warn"]])}
+      <h3 style="margin-top:12px">Combinações pedidas mais vezes não autorizadas</h3><div class="gwrap"><table class="gtab"><thead><tr><th>Área</th><th>Arte</th><th class="n">Vezes</th></tr></thead><tbody>${
+      topC.map(([k,n])=>{const [a,t]=k.split("|");return `<tr><td>${a} <span class="small">${esc(AREA_NOME[a]||"")}</span></td><td>${esc(nomeArte(t))}</td><td class="n">${n}</td></tr>`}).join("")||'<tr><td colspan="3" class="empty">Nenhuma autorização parcial.</td></tr>'}</tbody></table></div></div>`,
+      `<div class="gblk"><h3>Motivos de indeferimento mais frequentes</h3><div class="gwrap"><table class="gtab"><thead><tr><th>Justificação</th><th class="n">Pedidos</th></tr></thead><tbody>${
+      topM.map(x=>`<tr><td>${esc(x.t.length>220?x.t.slice(0,220)+"…":x.t)}</td><td class="n">${x.n}</td></tr>`).join("")||'<tr><td colspan="2" class="empty">Sem indeferimentos.</td></tr>'}</tbody></table></div>
+      <p class="small" style="margin:6px 0 0">Agrupa justificações com o mesmo texto. Usar sempre a mesma redação para o mesmo motivo torna esta contagem mais útil.</p></div>`],[
+      {id:"c7",tit:"Taxa de autorização por área",sub:"% dos pedidos decididos que incluíam a área",labels:AREAS,unit:"%",max:100,ds:[{label:"% autorizada",data:txA,color:S1}],click:i=>aplicarFiltro("areaSol",AREAS[i])},
+      {id:"c15",tit:"Taxa de autorização por arte",sub:"% dos pedidos decididos que incluíam a arte",horiz:true,labels:ARTES.map(nomeArte),unit:"%",max:100,ds:[{label:"% autorizada",data:txT,color:S1}],click:i=>aplicarFiltro("arteSol",ARTES[i])},
+      {id:"c16",tit:"Taxa de autorização por país",sub:"% dos pedidos decididos (10 países com mais pedidos)",horiz:true,labels:paises.map(p=>`${p[0]} (${p[1].n})`),unit:"%",max:100,ds:[{label:"% autorizada",data:paises.map(p=>pct(p[1].a,p[1].n)),color:S1}],click:i=>{const p=paises[i][0];if(p!=="(sem país)")aplicarFiltro("pais",p)}}]);
+  }
+  /* ---- ÁREAS E FROTA ---- */
+  if(quer("areas")){
+    let paises=Object.entries(contar(lst,"pais")).sort((a,b)=>b[1]-a[1]);
+    if(paises.length>10){const outros=paises.slice(9).reduce((s,x)=>s+x[1],0);paises=[...paises.slice(0,9),["Outros",outros]]}
+    const emb=(f)=>new Set(lst.filter(f).map(r=>normCod(r.cjId)||norm(r.embarcacao)).filter(Boolean)).size;
+    const pt=r=>norm(r.pais)==="portugal",sem=r=>!r.pais;
+    S("areas",[`<div class="gblk"><h3>Mapa de calor — área × arte</h3>${heatmapHTML(lst)}</div>`,
+      `<div class="gblk"><h3>Embarcações autorizadas por área</h3>${frotaHTML(lst)}</div>`,
+      `<div class="gblk"><h3>Portuguesas e estrangeiras</h3>${tiles([[lst.filter(pt).length,"Pedidos — Portugal"],[lst.filter(r=>!pt(r)&&!sem(r)).length,"Pedidos — estrangeiras"],[lst.filter(sem).length,"Pedidos — sem país"],
+        [emb(pt),"Embarcações portuguesas"],[emb(r=>!pt(r)&&!sem(r)),"Embarcações estrangeiras"]])}</div>`,
+      `<div class="gblk"><h3>Titulares com mais pedidos</h3>${topHTML(lst,"titular","Titular")}</div>`,
+      `<div class="gblk"><h3>Embarcações com mais pedidos</h3>${topHTML(lst,"embarcacao","Embarcação")}</div>`],[
+      {id:"c5",tit:"Pedidos por país",sub:paises.length>=10?"10 principais":"N.º de pedidos",horiz:true,labels:paises.map(p=>p[0]),ds:[{label:"Pedidos",data:paises.map(p=>p[1]),color:S1}],click:i=>{const p=paises[i][0];if(p!=="Outros"&&p!=="(sem país)")aplicarFiltro("pais",p)}}]);
+  }
+  /* ---- VALIDADE E ADENDAS ---- */
+  if(quer("validade")){
+    const orig=lst.filter(r=>!ehAdenda(r)&&r.decisao==="Autorizado");
+    const vig=orig.filter(r=>emVigor(r,HOJE)),fimDe=r=>vigente(r).validade||r.validade||"";
+    const exp=n=>vig.filter(r=>{const d=dias(HOJE,fimDe(r));return d!==null&&d<=n}).length;
+    const expAno=orig.filter(r=>{const f=fimDe(r);return f&&f<HOJE&&f.startsWith(HOJE.slice(0,4))}).length;
+    const meses=[];{let [a,m]=HOJE.split("-").map(Number);for(let i=0;i<12;i++){meses.push([`${a}-${String(m).padStart(2,"0")}`,`${MESES[m-1]}/${String(a).slice(2)}`]);if(++m>12){m=1;a++}}}
+    const ads=lst.filter(ehAdenda),adA=ads.filter(r=>r.decisao==="Autorizado");let mA=0,mV=0,mE=0;
+    adA.forEach(r=>{const o=original(r.adendaDe);if(!o)return;if(pares(mapa(r,"aut")).sort().join()!==pares(mapa(o,"aut")).sort().join())mA++;
+      if((r.validade||"")!==(o.validade||""))mV++;if(norm(r.embarcacao)!==norm(o.embarcacao)||normCod(r.cjId)!==normCod(o.cjId)||norm(r.titular)!==norm(o.titular))mE++});
+    const Ta=ads.map(temposDe);
+    S("validade",[`<div class="gblk"><h3>Autorizações</h3>${tiles([[vig.length,"Em vigor hoje","--ok"],[exp(30),"Expiram em 30 dias","--bad"],[exp(60),"Expiram em 60 dias","--warn"],[exp(90),"Expiram em 90 dias"],[expAno,`Expiradas em ${HOJE.slice(0,4)}`]])}</div>`,
+      `<div class="gblk"><h3>Adendas</h3>${tiles([[ads.length,"Adendas"],[adA.length,"Autorizadas","--ok"],[ads.filter(r=>r.decisao==="Indeferido").length,"Indeferidas","--bad"],[ads.filter(r=>(r.decisao||"Pendente")==="Pendente").length,"Pendentes","--warn"]])}
+       <h3 style="margin-top:12px">O que mudaram (adendas autorizadas)</h3>${tiles([[mA,"Áreas/artes"],[mV,"Validade"],[mE,"Embarcação ou titular"]])}
+       <h3 style="margin-top:12px">Tramitação das adendas (dias)</h3>${tiles([[fmtN(media(Ta.map(t=>t.proc))),"Média até processamento"],[fmtN(media(Ta.map(t=>t.semDrp))),"Média sem DRP"],[fmtN(media(Ta.map(t=>t.env))),"Média até envio"]])}</div>`],[
+      {id:"c17",tit:"Autorizações que expiram nos próximos 12 meses",sub:"N.º de autorizações em vigor por mês de fim da validade",labels:meses.map(x=>x[1]),ds:[{label:"Expiram",data:meses.map(([k])=>vig.filter(r=>fimDe(r).startsWith(k)).length),color:S2}]}]);
+  }
+  /* ---- QUALIDADE ---- */
+  if(quer("qualidade")){
+    const sob=sobSet(),pp=(sob.pares||[]).filter(([a,b])=>lst.some(r=>r.id===a)||lst.some(r=>r.id===b)).slice(0,25);
+    const byId=id=>dados.find(r=>r.id===id)||{};
+    S("qualidade",[`<div class="gblk"><h3>Registos a completar ou verificar</h3><div class="gwrap"><table class="gtab"><thead><tr><th>Verificação</th><th class="n">Pedidos</th><th class="n">%</th><th class="noprint"></th></tr></thead><tbody>${
+      QUAL.map(([k,l,f])=>{const n=lst.filter(f).length;return `<tr><td>${l}</td><td class="n">${n||'<span class="small">0</span>'}</td><td class="n">${lst.length?pct(n,lst.length)+"%":"—"}</td><td class="noprint">${n?btnVer("qual",k):""}</td></tr>`}).join("")}</tbody></table></div></div>`,
+      `<div class="gblk"><h3>Pedidos da mesma embarcação com áreas/artes em comum e período sobreposto</h3><div class="gwrap"><table class="gtab"><thead><tr><th>Pedido</th><th>Outro pedido</th><th>Em comum</th><th>Período</th></tr></thead><tbody>${
+      pp.map(([a,b,x])=>{const A=byId(a),B=byId(b);return `<tr><td><a href="#" onclick="abrir('${a}');return false">${esc(A.distribuicao)}</a><br><span class="small">${esc(A.embarcacao||"")} · ${esc(estadoTxt(A))}</span></td>
+        <td><a href="#" onclick="abrir('${b}');return false">${esc(B.distribuicao)}</a><br><span class="small">${esc(estadoTxt(B))}</span></td><td>${esc((x.dif.find(d=>d[0]==="Em comum")||["",""])[1])}</td><td class="small">${esc((x.dif.find(d=>d[0]==="Período")||["",""])[1])}</td></tr>`}).join("")
+      ||'<tr><td colspan="4" class="empty">Nenhuma sobreposição encontrada.</td></tr>'}</tbody></table></div></div>`],[]);
+  }
+  /* ---- POR UTILIZADOR (admin) ---- */
+  if(quer("utilizadores")){
+    const per=desPer,desde=per==="mes"?HOJE.slice(0,7)+"-01":per==="ano"?HOJE.slice(0,4)+"-01-01":per==="30"?(d=>{d.setDate(d.getDate()-30);return d.toISOString().slice(0,10)})(new Date(HOJE)):"";
+    const noPer=t=>!desde||(t&&new Date(t).toISOString().slice(0,10)>=desde);
+    const U={},u=(e,n)=>{const k=chaveU(e||n||"?");return U[k]=U[k]||{e:e||"",n:n||e||"(desconhecido)",et:Object.fromEntries(ETAPAS.map(x=>[x[0],0])),aut:0,ind:0,ed:0,ult:0,tProc:[],pdf:0,excel:0}};
+    lst.forEach(r=>{
+      const et=r.etapas||{};
+      if(!et.registo&&(r.criadoPorEmail||r.criadoPor)&&noPer(r.criado)){const x=u(r.criadoPorEmail,r.criadoPor);x.et.registo++;x.ult=Math.max(x.ult,r.criado||0)}
+      Object.entries(et).forEach(([k,q])=>{if(!q||!noPer(q.t))return;const x=u(q.e,q.n);if(k in x.et)x.et[k]++;x.ult=Math.max(x.ult,q.t||0);
+        if(k==="decisao"){if(q.d==="Autorizado")x.aut++;else if(q.d==="Indeferido")x.ind++}
+        if(k==="registo"&&q.o==="pdf")x.pdf++;if(k==="registo"&&q.o==="excel")x.excel++;
+        if(k==="dtProc"){const t=temposDe(r).proc;if(t!==null)x.tProc.push(t)}});
+      Object.values(r.edicoes||{}).forEach(q=>{if(!noPer(q.t))return;const x=u(q.e,q.n);x.ed+=q.c||0;x.ult=Math.max(x.ult,q.t||0)});
+    });
+    // nomes: preferir o nome mais recente / da lista de utilizadores
+    Object.values(U).forEach(x=>{const nm=cfg&&cfg.nomes&&cfg.nomes[(x.e||"").toLowerCase()];if(nm)x.n=nm});
+    const L=Object.values(U).sort((a,b)=>b.ed-a.ed||b.et.registo-a.et.registo);
+    const semEt=lst.filter(r=>!r.etapas).length;
+    const selPer=`<div class="chips-inline noprint"><label class="small">Atividade: <select onchange="desPer=this.value;renderCharts()">${[["","Todo o período"],["30","Últimos 30 dias"],["mes","Este mês"],["ano","Este ano"]].map(([v,l])=>`<option value="${v}" ${v===per?"selected":""}>${l}</option>`).join("")}</select></label>
+      <span class="small">Conta as etapas feitas por cada utilizador nos pedidos selecionados.</span></div>`;
+    S("utilizadores",[`<div class="gblk"><h3>Desempenho por utilizador</h3>${selPer}<div class="gwrap"><table class="gtab"><thead><tr><th>Utilizador</th>${ETAPAS.map(x=>`<th class="n">${x[1]}</th>`).join("")}<th class="n">Autoriz. / Indef.</th><th class="n">Edições</th><th class="n">Média entrada→proc. (dias)</th><th>Última atividade</th></tr></thead><tbody>${
+      L.map(x=>`<tr><td><b>${esc(x.n)}</b>${x.e&&x.e!==x.n?`<br><span class="small">${esc(x.e)}</span>`:""}</td>${ETAPAS.map(([k])=>`<td class="n">${x.et[k]||'<span class="small">0</span>'}${k==="registo"&&(x.pdf||x.excel)?`<br><span class="small">${x.pdf?x.pdf+" PDF":""}${x.pdf&&x.excel?" · ":""}${x.excel?x.excel+" Excel":""}</span>`:""}</td>`).join("")}
+        <td class="n">${x.aut} / ${x.ind}</td><td class="n">${x.ed}</td><td class="n">${fmtN(media(x.tProc))}</td><td class="small">${x.ult?new Date(x.ult).toLocaleString("pt-PT"):"—"}</td></tr>`).join("")
+      ||'<tr><td colspan="12" class="empty">Sem atividade registada no período.</td></tr>'}</tbody></table></div>
+      <p class="small" style="margin:8px 0 0">Cada etapa é atribuída a quem preencheu a respetiva data (ou registou a decisão) — se a data for alterada mais tarde, conta para quem a alterou. «Edições» conta todas as gravações.${semEt?` <b>${semEt} pedido(s)</b> foram gravados antes desta versão: desses só se sabe quem os registou.`:""}</p></div>`],[
+      {id:"c19",tit:"Etapas por utilizador",sub:"N.º de pedidos",labels:L.map(x=>x.n),ds:[["registo","Registados","--s1"],["dtProc","Processados","--s2"],["decisao","Decisões","--s3"],["dtEnvio","Enviados ao requerente","--s4"]].map(([k,l,c])=>({label:l,data:L.map(x=>x.et[k]),color:css(c)}))}]);
+  }
+  /* ---- ANOS ---- */
+  if(quer("anos")){
+    const anos=[...new Set(lst.map(r=>(r.dataEntrada||"").slice(0,4)).filter(Boolean))].sort();
+    S("anos",[`<div class="gblk"><h3>Comparação entre anos</h3>${anosHTML(lst)}</div>`],[
+      {id:"c18",tit:"Pedidos por ano de entrada e decisão",sub:"N.º de pedidos",labels:anos,
+        ds:[{label:"Autorizados",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&r.decisao==="Autorizado").length),color:ok},
+            {label:"Indeferidos",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&r.decisao==="Indeferido").length),color:bad},
+            {label:"Pendentes",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&(r.decisao||"Pendente")==="Pendente").length),color:warn}],click:i=>aplicarFiltro("ano",anos[i])}]);
+  }
 
   charts.forEach(c=>c.destroy());charts=[];
-  $("#charts").innerHTML=defs.map(d=>`<div class="ch"><div class="ch-h"><h3>${d.tit}</h3><span class="small">${d.sub}</span>
-    <button class="b-sm" onclick="this.closest('.ch').querySelector('.tb').classList.toggle('hide')">Tabela</button></div>
-    <div class="ch-box"><canvas id="${d.id}" role="img" aria-label="${esc(d.tit)}"></canvas></div><div class="tb hide">${tabelaHTML(d)}</div></div>`).join("");
-  if(!lst.length){$("#charts").insertAdjacentHTML("afterbegin",'<p class="empty full">Sem pedidos para mostrar com os critérios atuais.</p>')}
-
+  const cartao=d=>`<div class="ch"><div class="ch-h"><h3>${d.tit}</h3><span class="small">${d.sub}</span>
+    <button class="b-sm noprint" onclick="this.closest('.ch').querySelector('.tb').classList.toggle('hide')">Tabela</button></div>
+    <div class="ch-box"><canvas id="${d.id}" role="img" aria-label="${esc(d.tit)}"></canvas></div><div class="tb hide">${tabelaHTML(d)}</div></div>`;
+  $("#gCorpo").innerHTML=(lst.length?"":'<p class="empty">Sem pedidos para mostrar com os critérios atuais.</p>')+
+    secs.map(x=>`${gSec==="todas"?`<h2 class="gsec-t">${x.tit}</h2>`:""}${x.blocos.join("")}${x.defs.length?`<div class="charts">${x.defs.map(cartao).join("")}</div>`:""}`).join("");
+  const defs=secs.flatMap(x=>x.defs);
   Chart.defaults.animation=false;Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;Chart.defaults.color=TXT;
   defs.forEach(d=>{
     const multi=d.ds.length>1;
@@ -1511,7 +1892,7 @@ function imprimirHTML(h,landscape){
 }
 const logoSrc=()=>$("header .logo").src;
 function descreverFiltros(F){
-  const d=[],L={dtProc:"Dt. processamento",dtEnvio:"Dt. envio ao requerente",dataEntrada:"Data Entrada",dtDRP:"Dt. envio DRP",dtDRPM:"Dt. envio DRPM",dtEmissao:"Dt. Emissão",validade:"Validade"};
+  const d=[],L={periodoIni:"Período pedido (início)",periodoFim:"Período pedido (fim)",dtProc:"Dt. processamento",dtEnvio:"Dt. envio ao requerente",dataEntrada:"Data Entrada",dtDRP:"Dt. envio DRP",dtDRPM:"Dt. envio DRPM",dtEmissao:"Dt. Emissão",validade:"Validade"};
   const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM",proc:"enviado para assinatura",assin:"assinado, por enviar",env:"enviado ao requerente"};
   const val={valido:"válidos",expira:"a expirar",expirado:"expirados"};
   if(F.q)d.push(`texto “${F.q}”`);
@@ -1520,6 +1901,8 @@ function descreverFiltros(F){
   if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias`);
   if(F.dDe||F.dAte)d.push(`${L[F.dCampo]}: ${F.dDe?fmt(F.dDe):"…"} a ${F.dAte?fmt(F.dAte):"…"}`);
   if(F.dup)d.push("só possíveis duplicados");
+  if(F.fase!==""&&F.fase!=null)d.push("Fase: "+FASES[+F.fase]);
+  if(F.qual){const q=QUAL.find(x=>x[0]===F.qual);if(q)d.push("A verificar: "+q[1])}
   if(F.tipo)d.push({Novo:"só pedidos novos",Adenda:"só adendas",comAd:"autorizações com adendas"}[F.tipo]);
   if(F.docEst)d.push("Documentação "+F.docEst);
   if(F.DC.length)d.push(`Documentos (${F.mDC==="all"?"todos":F.mDC==="none"?"em falta":"algum"}): ${F.DC.join(", ")}`);
@@ -1546,14 +1929,18 @@ function imprimirListagem(){
    <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Envio</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table><p class="sub">Artes: ${esc(LEGENDA)}</p></div>`,true);
 }
 function imprimirRelatorio(){
-  if(!charts.length){toast("Os gráficos ainda não estão disponíveis");return}
+  if(typeof Chart==="undefined"){toast("Os gráficos não estão disponíveis");return}
+  const ant=gSec;gSec="todas";renderCharts();
   const pesq=$("#gFonte").value==="pesq",F=getFiltros(),lst=pesq?filtrar(F):dados;
-  const kp=[...document.querySelectorAll("#gStats .stat")].map(e=>`<div><b>${esc(e.querySelector("b").textContent)}</b>${esc(e.querySelector("span").textContent)}</div>`).join("");
-  const gr=charts.map(c=>`<div><h4>${esc(c.canvas.closest(".ch").querySelector("h3").textContent)}</h4><img src="${c.toBase64Image("image/png",1)}" alt=""></div>`).join("");
+  const c=$("#gCorpo").cloneNode(true);
+  c.querySelectorAll("canvas").forEach(cv=>{const ch=charts.find(x=>x.canvas.id===cv.id);const img=document.createElement("img");if(ch)img.src=ch.toBase64Image("image/png",1);cv.closest(".ch-box").replaceWith(img)});
+  c.querySelectorAll(".tb,.noprint").forEach(e=>e.remove());
   const datas=lst.map(r=>r.dataEntrada).filter(Boolean).sort();
   const per=datas.length?`Período de entrada: ${fmt(datas[0])} a ${fmt(datas[datas.length-1])}`:"";
-  imprimirHTML(`<div class="pf">${cabecalhoPrint("Rampa-P — Relatório",`<b>Dados:</b> ${pesq?esc(descreverFiltros(F)):"Todos os registos"}<br>${per}`)}
-   <h3>Resumo</h3><div class="kp">${kp}</div><h3>Gráficos</h3><div class="rg">${gr}</div></div>`,false);
+  const kp=$("#gStats").outerHTML;
+  imprimirHTML(`<div class="pf">${cabecalhoPrint("Rampa-P — Relatório estatístico",`<b>Dados:</b> ${pesq?esc(descreverFiltros(F)):"Todos os registos"}<br>${per}`)}
+   <h3>Resumo</h3>${kp}${c.innerHTML}</div>`,false);
+  gSec=ant;setTimeout(renderCharts,500);
 }
 
 /* ---------- Ofício ---------- */
@@ -1607,9 +1994,9 @@ function imprimir(){
    <h1><img src="${$('header .logo').src}" alt="">Rampa-P — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
    <h3>Identificação</h3><table>${row("Distribuição",esc(r.distribuicao))}${row("Data Entrada",fmt(r.dataEntrada))}${row("N.º Pedido",esc(r.nPedido))}
     ${row("Nome do Titular",esc(r.titular))}${r.tipoReq?row("Tipologia",esc(r.tipoReq)):""}${row("NIF / NIPC",esc(r.nif))}${row("Morada",esc(r.morada))}${row("Email",esc(r.email))}${row("Telefone",esc(r.telefone))}${r.representante?row("Representante",esc(r.representante)):""}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
-   <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}</table>
+   <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}${row("Período pedido",r.periodoIni||r.periodoFim?`${fmt(r.periodoIni)||"…"} a ${fmt(r.periodoFim)||"…"}`:"")}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
-    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${dias(r.dataEntrada,r.dtEnvio)!==null?row("Tempo total do processo",dias(r.dataEntrada,r.dtEnvio)+" dias"):""}</table>
+    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${(t=>(t.proc!==null?row("Até processamento",t.proc+" dias"+(t.semDrp!==null&&t.semDrp!==t.proc?` (${t.semDrp} sem o tempo na DRP)`:"")):"")+(t.env!==null?row("Tempo total do processo",t.env+" dias"):""))(temposDe(r))}</table>
    <h3>Decisão</h3><table>${ehAdenda(r)?row("Tipo de pedido","Adenda à autorização n.º "+esc(r.adendaDe)):""}${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
@@ -1627,9 +2014,9 @@ function carregarXLSX(){
 }
 const COLS_X=[ // ordem das colunas no Excel exportado / modelo
  ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["tipoReq","Tipologia do Requerente"],["nif","NIF"],["morada","Morada"],["email","Email"],["telefone","Telefone"],["representante","Representante"],["embarcacao","Embarcação"],
- ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["pareceres","Pareceres"],
+ ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["periodoIni","Período Pedido Início"],["periodoFim","Período Pedido Fim"],["pareceres","Pareceres"],
  ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["tipoPedido","Tipo de Pedido"],["adendaDe","Adenda à Autorização"],["nAut","N.º Autorização"],
- ["justificacao","Justificação Indeferimento"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["validade","Validade"],
+ ["justificacao","Justificação Indeferimento"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["tProc","Dias até Processamento"],["tSemDrp","Dias até Processamento sem DRP"],["tEnv","Dias até Envio"],["validade","Validade"],
  ["observacoes","Observações"],["criadoPor","Registado por"],["alteradoPor","Última alteração por"]];
 const nrm=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const SINON={
@@ -1648,6 +2035,8 @@ const SINON={
  pais:["pais","nacionalidade","bandeira"],
  areasSol:["areas solicitadas","area solicitada","areas sol"],
  artesSol:["artes solicitadas","arte solicitada","artes sol"],
+ periodoIni:["periodo pedido inicio","periodo inicio","data inicio","data de inicio","inicio","inicio do periodo"],
+ periodoFim:["periodo pedido fim","periodo fim","data fim","data de fim","fim","fim do periodo"],
  solMap:["solicitado area artes","solicitado","areas e artes solicitadas"],
  pareceres:["pareceres","parecer"],
  documentos:["documentos","documentos apresentados","docs"],
@@ -1667,7 +2056,7 @@ const SINON={
  dtEmissao:["dt emissao","data emissao","emissao","data de emissao"],
  validade:["validade","data validade","valido ate"],
  observacoes:["observacoes","obs","observacao"]};
-const IGNORAR_COL=["tempo exec drp dias","tempo exec drp","registado por","ultima alteracao por"];
+const IGNORAR_COL=["dias ate processamento","dias ate processamento sem drp","dias ate envio","tempo exec drp dias","tempo exec drp","registado por","ultima alteracao por"];
 function dataX(v){
   if(v===""||v==null)return {v:""};
   if(typeof v==="number"&&v>20000&&v<80000)return {v:new Date(Math.round((v-25569)*86400000)).toISOString().slice(0,10)};
@@ -1729,7 +2118,7 @@ function interpretarExcel(aoa){
     if(!L.some(c=>String(c??"").trim()))continue;
     const av=[],r={};
     ["distribuicao","nPedido","tipoPedido","adendaDe","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
-    ["dataEntrada","dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
+    ["dataEntrada","periodoIni","periodoFim","dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
     if(mapa.solMap!==undefined&&txt("solMap"))r.solMap=mapaX(g("solMap"),av,"Solicitado");
     else if(mapa.areasSol!==undefined)r.solMap=mapaAreasArtes(g("areasSol"),g("artesSol"),av,"Solicitado");
     if(mapa.autMap!==undefined&&txt("autMap"))r.autMap=mapaX(g("autMap"),av,"Autorizado");
@@ -1819,7 +2208,7 @@ async function confirmarImp(){
         doc={...x.ex};delete doc.id;
         Object.entries(x.r).forEach(([k,v])=>{const vazio=v===""||v==null||(Array.isArray(v)&&!v.length)||(typeof v==="object"&&!Array.isArray(v)&&!Object.keys(v).length);if(!vazio)doc[k]=v});
       }else{
-        doc={distribuicao:"",dataEntrada:"",nPedido:"",titular:"",tipoReq:"",nif:"",morada:"",email:"",telefone:"",representante:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
+        doc={periodoIni:"",periodoFim:"",distribuicao:"",dataEntrada:"",nPedido:"",titular:"",tipoReq:"",nif:"",morada:"",email:"",telefone:"",representante:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
           decisao:"Pendente",justificacao:"",dtProc:"",dtEnvio:"",dtOficio:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
           criado:agora,criadoPor:sess.nome,criadoPorEmail:sess.email,apagado:false};
       }
@@ -1830,6 +2219,7 @@ async function confirmarImp(){
       if(!doc.dtEmissao&&doc.dtOficio)doc.dtEmissao=doc.dtOficio;doc.dtOficio="";
       const s1=resumo(doc.solMap||{}),s2=resumo(doc.autMap||{});
       Object.assign(doc,{areasSol:s1.areasSol,artesSol:s1.artesSol,areasAut:s2.areasSol,artesAut:s2.artesSol},quem());
+      marcarEtapas(doc,x.ex||null,"excel");
       return (x.ex?col.doc(x.ex.id):col.doc()).set(doc).then(()=>ok++).catch(e=>{falhas++;console.error(e)});
     }));
   }
@@ -1840,8 +2230,8 @@ async function confirmarImp(){
 function linhaExcel(r){
   const t=dias(r.dtDRP,r.dtDRPM);
   return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,tipoReq:r.tipoReq||"",nif:r.nif||"",morada:r.morada||"",email:r.email||"",telefone:r.telefone||"",representante:r.representante||"",embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
-    documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
-    tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
+    documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),periodoIni:fmt(r.periodoIni),periodoFim:fmt(r.periodoFim),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
+    tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),...(t=>({tProc:t.proc??"",tSemDrp:t.semDrp??"",tEnv:t.env??""}))(temposDe(r)),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
     dtEmissao:fmt(dtAss(r)),validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
 }
 function folhaXLSX(linhas){
@@ -1860,7 +2250,7 @@ async function exportExcel(){
 async function modeloExcel(){
   try{await carregarXLSX()}catch(e){alert(e.message);return}
   const ex={distribuicao:"SGC0060/2026/0001",dataEntrada:"15/01/2026",nPedido:"123/2026",titular:"Nome do titular",tipoReq:"Particular (pessoa singular)",nif:"",morada:"Rua …, Horta",email:"titular@exemplo.pt",telefone:"912345678",representante:"",embarcacao:"Mar Azul",cjId:"H-1234-L",pais:"Portugal",
-    documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",tipoPedido:"Novo",adendaDe:"",nAut:"",
+    documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",periodoIni:"01/01/2026",periodoFim:"31/12/2026",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",tipoPedido:"Novo",adendaDe:"",nAut:"",
     justificacao:"",autMap:"17: Fundo",dtProc:"08/02/2026",dtEmissao:"10/02/2026",dtEnvio:"12/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,folhaXLSX([ex]),"Pedidos");
   const ajuda=[["Coluna","Como preencher"],
@@ -1868,6 +2258,7 @@ async function modeloExcel(){
     ["Datas","dd/mm/aaaa ou data do Excel."],
     ["Documentos","DUP, CN, TP e/ou Outro: descrição. Ex.: DUP, CN, Outro: Licença anterior"],
     ["Solicitado (área: artes)","Uma área por bloco, separadas por ponto e vírgula. Ex.: 17: Fundo, L Mão; 25: Pl Sup"],
+    ["Período Pedido Início / Fim","Período pedido pelo requerente (dd/mm/aaaa)."],
     ["Autorizado (área: artes)","Igual ao solicitado; só para pedidos Autorizados."],
     ["Áreas",AREAS.join(", ")+" (também aceita PMA17, 12A…)"],
     ["Artes",ARTES.map(t=>`${abr(t)} = ${nomeArte(t)}`).join("; ")],
@@ -1876,7 +2267,7 @@ async function modeloExcel(){
     ["Dt Emissão","Data de assinatura — da autorização ou, nos indeferidos, do ofício."],
     ["Dt. Envio ao Requerente","Data de envio da autorização / ofício ao requerente."],
     ["Validade","Só para pedidos Autorizados. Se ficar vazia, fica 31/12 do ano da Dt Emissão."],
-    ["Tempo Exec. DRP, Registado por, Última alteração por","Calculados pela app — são ignorados ao importar."],
+    ["Tempo Exec. DRP, Dias até Processamento/Envio, Registado por, Última alteração por","Calculados pela app — são ignorados ao importar."],
     ["Alternativa","Pode usar as colunas “Áreas Solicitadas” + “Artes Solicitadas” (e “Áreas/Artes Autorizadas”) em vez das colunas área: artes."]];
   const wa=XLSX.utils.aoa_to_sheet(ajuda);wa["!cols"]=[{wch:34},{wch:110}];XLSX.utils.book_append_sheet(wb,wa,"Instruções");
   XLSX.writeFile(wb,"Rampa-P_modelo_importacao.xlsx");
@@ -1960,8 +2351,8 @@ function interpretarPdf(pares,ficheiro){
       if(!t.length)av.push(`Atividade não reconhecida: “${val}”`);
       if(!areasAtuais.length&&t.length)av.push(`Atividade sem área associada: “${val}”`);
       areasAtuais.forEach(a=>r.solMap[a]=ARTES.filter(x=>[...(r.solMap[a]||[]),...t].includes(x)));}
-    else if(/data (de )?inicio/.test(k))info.ini=dataPt(val);
-    else if(/data (de )?fim/.test(k))info.fim=dataPt(val);
+    else if(/data (de )?inicio/.test(k)){r.periodoIni=dataPt(val);if(r.periodoIni)usar("periodoIni")}
+    else if(/data (de )?fim/.test(k)){r.periodoFim=dataPt(val);if(r.periodoFim)usar("periodoFim")}
     else if(/certificado|licenca|declaracao|documento|titulo|anexo/.test(k))outrosDocs.push(label);
   });
   r.titular=denom||nome;if(r.titular)usados.push("titular");
@@ -1976,7 +2367,6 @@ function interpretarPdf(pares,ficheiro){
   if(r.cjId&&/^PT/i.test(r.cjId)){r.pais="Portugal";usados.push("pais")}
   if(Object.keys(r.solMap).length)usados.push("solMap");
   const obs=[`Importado do formulário PDF ${ficheiro}${r.nPedido?` (Ref. ${r.nPedido})`:""}.`];
-  if(info.ini||info.fim)obs.push(`Período pedido: ${fmt(info.ini)||"—"} a ${fmt(info.fim)||"—"}.`);
   r.observacoes=obs.join("\n");
   ["nPedido","titular","embarcacao","cjId"].forEach(c=>{if(!r[c])av.push(`Campo não encontrado no PDF: ${{nPedido:"Referência",titular:"Nome do requerente",embarcacao:"Nome da embarcação",cjId:"Conjunto de identificação"}[c]}`)});
   if(!Object.keys(r.solMap).length)av.push("Nenhuma área/atividade reconhecida no PDF");
@@ -1995,8 +2385,8 @@ async function importarPdf(f){
     if(!usados.length){alert("Não reconheci os campos deste PDF. Confirme que é o formulário de pedido RAMPA-P.");return}
     const ja=r.nPedido&&dados.find(x=>normCod(x.nPedido)===normCod(r.nPedido));
     if(ja&&!confirm(`Já existe um pedido com a Referência ${r.nPedido} (${ja.distribuicao}).\nCriar outro pedido a partir deste PDF?`))return;
-    abrir(null,{...r,decisao:"Pendente"});
-    const campos={tipoReq:"[name=tipoReq]",nif:"[name=nif]",morada:"[name=morada]",email:"[name=email]",telefone:"[name=telefone]",representante:"[name=representante]",nPedido:"[name=nPedido]",dataEntrada:"[name=dataEntrada]",titular:"[name=titular]",embarcacao:"[name=embarcacao]",cjId:"[name=cjId]",pais:"[name=pais]",docs:"#docs",solMap:"#mxSol"};
+    abrir(null,{...r,decisao:"Pendente"});_origem="pdf";
+    const campos={periodoIni:"[name=periodoIni]",periodoFim:"[name=periodoFim]",tipoReq:"[name=tipoReq]",nif:"[name=nif]",morada:"[name=morada]",email:"[name=email]",telefone:"[name=telefone]",representante:"[name=representante]",nPedido:"[name=nPedido]",dataEntrada:"[name=dataEntrada]",titular:"[name=titular]",embarcacao:"[name=embarcacao]",cjId:"[name=cjId]",pais:"[name=pais]",docs:"#docs",solMap:"#mxSol"};
     usados.forEach(c=>campos[c]&&$(campos[c])&&$(campos[c]).classList.add("from-pdf"));
     $("[name=observacoes]").classList.add("from-pdf");
     $("#pdfBox").innerHTML=`<b>📄 Dados importados de ${esc(f.name)}</b> — os campos preenchidos a partir do PDF estão destacados. Confirme-os, indique a <b>Distribuição</b> e guarde.`+
@@ -2016,9 +2406,9 @@ async function importarPdf(f){
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Período Pedido Início","Período Pedido Fim","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
+  const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),fmt(r.periodoIni),fmt(r.periodoFim),
     r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     fmt(r.dtProc),fmt(dtAss(r)),fmt(r.dtEnvio),r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
@@ -2067,6 +2457,8 @@ async function migrarAntigo(){
 construirMx("mxSol");construirMx("mxAut");
 chips("docs",DOCS.map(d=>d[0]),"docsChange()");chips("fDC",DOCS.map(d=>d[0]),"render()");
 DOCS.forEach(([c,n])=>{$$(`#docs input[value="${c}"],#fDC input[value="${c}"]`).forEach(i=>i.parentElement.title=n)});
+$("#fFase").innerHTML='<option value="">Qualquer</option>'+FASES.map((f,i)=>`<option value="${i}">${f}</option>`).join("");
+$("#fQual").innerHTML='<option value="">—</option>'+QUAL.map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
 chips("fAS",AREAS,"render()");chips("fTS",ARTES,"render()");chips("fAA",AREAS,"render()");chips("fTA",ARTES,"render()");
 $$("#fAS input,#fAA input").forEach(i=>i.parentElement.title=nomeArea(i.value));
 $$("#fTS input,#fTA input").forEach(i=>{i.nextElementSibling.textContent=abr(i.value);i.parentElement.title=nomeArte(i.value)});
