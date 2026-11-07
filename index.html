@@ -169,6 +169,9 @@ body:not(.role-admin) .so-admin{display:none!important}
 .pdfbox ul{margin:6px 0 0;padding-left:18px}
 .from-pdf{background:var(--warnbg)!important;border-color:var(--warn)!important}
 body.drag-pdf::after{content:"Largue o PDF para criar o pedido";position:fixed;inset:0;background:rgba(11,92,138,.75);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;z-index:30}
+.adbox{background:var(--pri2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:13px}
+.adbox ul{margin:4px 0 0;padding-left:18px}.adbox li button{padding:1px 8px;font-size:12px;margin-left:6px}
+.t-ad{background:var(--pri2);color:var(--pri)}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
 #toast.show{opacity:1}
 #printArea{display:none}
@@ -311,9 +314,10 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
         <label class="f">País<select data-f="pais" id="fPais" onchange="render()"></select></label>
         <label class="f">Decisão<select data-f="decisao" onchange="render()">
           <option value="">Todas</option><option>Pendente</option><option>Autorizado</option><option>Indeferido</option></select></label>
-        <label class="f">Situação na DRP<select data-f="sitDRP" onchange="render()">
+        <label class="f">Situação do processo<select data-f="sitDRP" onchange="render()">
           <option value="">Qualquer</option><option value="nao">Não enviado à DRP</option>
-          <option value="na">Na DRP (sem envio à DRPM)</option><option value="parado">Parados na DRP (acima do limite)</option><option value="concl">Já enviado à DRPM</option></select></label>
+          <option value="na">Na DRP (sem envio à DRPM)</option><option value="parado">Parados na DRP (acima do limite)</option><option value="concl">Já enviado à DRPM</option>
+          <option value="proc">Enviado para assinatura (por assinar)</option><option value="assin">Assinado, por enviar ao requerente</option><option value="env">Enviado ao requerente</option></select></label>
         <label class="f">Validade<select data-f="val" onchange="render()">
           <option value="">Qualquer</option><option value="valido">Válidos</option>
           <option value="expira">A expirar (≤30 dias)</option><option value="expirado">Expirados</option></select></label>
@@ -321,9 +325,10 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
         <label class="f">Tempo DRP máx. (dias)<input type="number" min="0" data-f="tMax" oninput="render()"></label>
         <label class="f">Data a filtrar<select data-f="dCampo" onchange="render()">
           <option value="dataEntrada">Data Entrada</option><option value="dtDRP">Dt. envio DRP</option>
-          <option value="dtDRPM">Dt. envio DRPM</option><option value="dtEmissao">Dt. Emissão</option><option value="validade">Validade</option></select></label>
+          <option value="dtDRPM">Dt. envio DRPM</option><option value="dtProc">Dt. processamento</option><option value="dtEmissao">Dt. emissão</option><option value="dtEnvio">Dt. envio ao requerente</option><option value="validade">Validade</option></select></label>
         <label class="f">De<input type="date" data-f="dDe" oninput="render()"></label>
         <label class="f">Até<input type="date" data-f="dAte" oninput="render()"></label>
+        <label class="f">Tipo de pedido<select data-f="tipo" onchange="render()"><option value="">Todos</option><option value="Novo">Só pedidos novos</option><option value="Adenda">Só adendas</option><option value="comAd">Autorizações com adendas</option></select></label>
         <label class="f">Duplicados<select data-f="dup" onchange="render()">
           <option value="">Mostrar todos</option><option value="sim">Só possíveis duplicados</option></select></label>
         <label class="f">Registado/alterado por<select data-f="por" id="fPor" onchange="render()"></select></label>
@@ -399,6 +404,18 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     <div class="tablewrap"><table style="min-width:600px"><thead><tr><th>Email</th><th>Nome</th><th>Perfil</th><th></th></tr></thead><tbody id="tbUsers"></tbody></table></div>
 
     <div class="secbox" style="margin-top:14px">
+      <h3>🔢 Numeração das autorizações</h3>
+      <p class="small">O N.º de Autorização é atribuído automaticamente, em sequência, quando um pedido é guardado como <b>Autorizado</b> (formato <code>RAMPA-P-AAAA-NNN</code>; a numeração recomeça em cada ano). A app nunca atribui um número igual ou inferior ao maior já registado nesse ano.
+      Se forem emitidas autorizações fora da app, indique aqui o último número usado.</p>
+      <div class="addu" style="grid-template-columns:1fr 1fr auto">
+        <label class="f">Ano<input id="cntAno" type="number" min="2020" max="2100" oninput="mostrarContador()"></label>
+        <label class="f">Último n.º atribuído<input id="cntUlt" type="number" min="0"></label>
+        <button onclick="gravarContador()">Gravar</button>
+      </div>
+      <p class="small" id="cntInfo"></p>
+    </div>
+
+    <div class="secbox" style="margin-top:14px">
       <h3>⇪ Importar da versão anterior (código de acesso)</h3>
       <p class="small">Copia os pedidos registados na versão com código de acesso para esta nova base de dados. Só funciona enquanto a regra antiga (<code>pp_acessos</code>) estiver nas regras do Firestore — depois de importar, pode removê-la.</p>
       <div class="addu" style="grid-template-columns:2fr auto">
@@ -420,15 +437,20 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
    <div class="conflict hide" id="conflict"><span id="conflictTxt" style="flex:1"></span><button type="button" class="b-sm" onclick="recarregarEdicao()">Carregar versão atual</button></div>
 
    <fieldset><legend>Identificação do pedido</legend>
+    <div class="grid" style="margin-bottom:12px">
+     <label class="f">Tipo de pedido<select name="tipoPedido" onchange="toggleTipo()"><option value="Novo">Novo pedido</option><option value="Adenda">Adenda a uma autorização</option></select></label>
+     <label class="f hide" id="boxAdDe" style="grid-column:span 2">Adenda à autorização n.º<input name="adendaDe" list="lAut" placeholder="RAMPA-P-2026-015" onchange="escolherOriginal()"><span class="small" id="adDeInfo"></span></label>
+    </div>
     <div class="grid">
      <label class="f">Distribuição<input name="distribuicao" placeholder="SGC0060/2026/0000" required></label>
-     <label class="f">Data Entrada<input type="date" name="dataEntrada"></label>
+     <label class="f">Data Entrada<input type="date" name="dataEntrada" oninput="calcTempo()"></label>
      <label class="f">N.º Pedido<input name="nPedido"></label>
      <label class="f">Nome do Titular<input name="titular" list="lTit"></label>
      <label class="f">Embarcação<input name="embarcacao" list="lEmb" onchange="completarEmb('emb')"></label>
      <label class="f">Conjunto Identificação<input name="cjId" list="lCj" placeholder="Ex.: H-1234-L" onchange="completarEmb('cj')"></label>
      <label class="f">País<input name="pais" list="lPais"></label>
     </div>
+    <div class="adbox hide" id="adLista"></div>
    </fieldset>
 
    <fieldset><legend>Dados do requerente</legend>
@@ -464,6 +486,11 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <label class="f">Dt. envio DRP<input type="date" name="dtDRP" oninput="calcTempo()"></label>
      <label class="f">Dt. envio DRPM<input type="date" name="dtDRPM" oninput="calcTempo()"></label>
      <label class="f">Tempo Exec. DRP<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
+     <label class="f">Dt. processamento<input type="date" name="dtProc" oninput="calcTempo()"><span class="small">Envio para assinatura</span></label>
+     <label class="f">Dt. emissão<input type="date" name="dtEmissao" oninput="autoValidade();hintNAut();calcTempo()"><span class="small">Data de assinatura (autorização ou ofício)</span></label>
+     <label class="f">Dt. envio ao requerente<input type="date" name="dtEnvio" oninput="calcTempo()"><span class="small">Envio da autorização / ofício</span></label>
+     <label class="f">Tempo total do processo<input id="tempoTot" readonly placeholder="—"><span class="small">Da Data Entrada ao envio ao requerente</span></label>
+     <span class="hint full" id="ordemHint"></span>
     </div>
    </fieldset>
 
@@ -475,10 +502,12 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
     </div>
     <div id="boxInd" class="hide" style="margin-top:12px">
      <label class="f">Justificação do indeferimento<textarea name="justificacao"></textarea></label>
-     <div class="grid" style="margin-top:12px"><label class="f">Dt. Ofício de indeferimento<input type="date" name="dtOficio"><span class="small">Não é emitida licença — apenas ofício a informar o indeferimento.</span></label></div>
+     <p class="small" style="margin:8px 0 0">Não é emitida licença — apenas ofício a informar o indeferimento (assinado na <b>Dt. emissão</b> e enviado na <b>Dt. envio ao requerente</b>, na secção Instrução).</p>
     </div>
     <div id="boxAut" class="hide" style="margin-top:12px">
-     <div class="grid" style="margin-bottom:12px"><label class="f">N.º de Autorização<input name="nAut" placeholder="Ex.: 123/2026" oninput="atualizarDup()"></label></div>
+     <div class="grid" style="margin-bottom:12px"><label class="f">N.º de Autorização
+       <span style="display:flex;gap:6px"><input name="nAut" readonly oninput="atualizarDup()"><button type="button" class="b-sm so-admin" title="Editar o número manualmente (só administrador)" onclick="desbloquearNAut()">✎</button></span>
+       <span class="small" id="nAutHint"></span></label></div>
      <div class="rowh">Áreas e artes autorizadas <button type="button" onclick="copiarSol()">= solicitadas</button><button type="button" onclick="limparMx('mxAut')">Limpar</button></div>
      <p class="small" style="margin:0 0 6px">Só é possível autorizar combinações área/arte que foram solicitadas.</p>
      <div class="mxw"><table class="mx" id="mxAut"></table></div>
@@ -486,8 +515,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <div class="legenda small"></div>
     </div>
     <div class="grid hide" id="boxEmi" style="margin-top:12px">
-     <label class="f">Dt. Emissão da licença<input type="date" name="dtEmissao" oninput="autoValidade()"></label>
-     <label class="f">Validade<input type="date" name="validade"><span class="small">Preenchida automaticamente até 31/12 do ano de emissão (pode alterar)</span></label>
+     <label class="f">Validade<input type="date" name="validade"><span class="small">Preenchida automaticamente até 31/12 do ano da Dt. emissão (pode alterar)</span></label>
     </div>
    </fieldset>
 
@@ -498,6 +526,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
   <div class="dlg-f">
    <button class="b-del hide so-edit" id="bDel" onclick="apagar()">🗑 Apagar</button>
    <button class="hide so-edit" id="bDup" onclick="duplicar()">Duplicar</button>
+   <button class="hide so-edit" id="bAd" onclick="novaAdenda()">＋ Adenda</button>
    <button class="hide" id="bPrint" onclick="imprimir()">Imprimir ficha</button>
    <button class="hide" id="bOf" onclick="abrirOficio()">📄 Ofício</button>
    <span class="sp"></span>
@@ -579,7 +608,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
  </div>
 </div>
 
-<datalist id="lTit"></datalist><datalist id="lEmb"></datalist><datalist id="lCj"></datalist><datalist id="lPais"></datalist>
+<datalist id="lTit"></datalist><datalist id="lEmb"></datalist><datalist id="lAut"></datalist><datalist id="lCj"></datalist><datalist id="lPais"></datalist>
 <div id="printArea"></div>
 <style id="pgSt"></style>
 <div id="toast"></div>
@@ -732,13 +761,14 @@ function ouvirConfig(){
     if(r!=="admin"&&!$("#utilizadores").classList.contains("hide"))tab("lista");
   },err=>{console.error(err);if(err.code==="permission-denied")semAcesso();else ecraMsg("Erro de ligação",esc(err.message),[["Tentar de novo",()=>location.reload(),true],["Sair",()=>auth.signOut()]])});
 }
-function desligar(){if(unsub)unsub();if(unsubCfg)unsubCfg();unsub=unsubCfg=null;col=null;todos=dados=lixo=[];primeiraCarga=true;document.body.classList.remove("role-admin","role-utilizador","role-consulta")}
+function desligar(){if(unsub)unsub();if(unsubCfg)unsubCfg();if(unsubCnt){unsubCnt();unsubCnt=null}unsub=unsubCfg=null;col=null;todos=dados=lixo=[];primeiraCarga=true;document.body.classList.remove("role-admin","role-utilizador","role-consulta")}
 function sair(){if(!confirm("Terminar a sessão neste computador?"))return;auth.signOut()}
 
 let _purgado=false;
 function ligar(){
   gate(null);
   col=db.collection(COLECAO);
+  ouvirContador();
   unsub=col.onSnapshot({includeMetadataChanges:true},snap=>{
     todos=snap.docs.map(d=>({...d.data(),id:d.id}));
     dados=todos.filter(r=>!r.apagado);lixo=todos.filter(r=>r.apagado);
@@ -857,6 +887,12 @@ function calcTempo(){
   $("#tempo").value=d===null?(f.dtDRP.value?"Na DRP há "+dias(f.dtDRP.value,hoje())+" dias":""):d+(Math.abs(d)===1?" dia":" dias");
   const nd=d===null&&f.dtDRP.value?dias(f.dtDRP.value,hoje()):null;
   $("#tempoHint").textContent=d!==null&&d<0?"Atenção: a data DRPM é anterior à data DRP":nd!==null&&nd>limiteDRP()?`⏰ Parado na DRP acima do limite (${limiteDRP()} dias)`:"";
+  const tt=dias(f.dataEntrada.value,f.dtEnvio.value);
+  $("#tempoTot").value=tt===null?(f.dataEntrada.value&&!f.dtEnvio.value?"Em curso há "+dias(f.dataEntrada.value,hoje())+" dias":""):tt+(Math.abs(tt)===1?" dia":" dias");
+  const seq=[["dataEntrada","Data Entrada"],["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["dtProc","Dt. processamento"],["dtEmissao","Dt. emissão"],["dtEnvio","Dt. envio ao requerente"]]
+    .filter(([k])=>f[k].value),erros=[];
+  for(let i=1;i<seq.length;i++)if(f[seq[i][0]].value<f[seq[i-1][0]].value)erros.push(`${seq[i][1]} é anterior a ${seq[i-1][1]}`);
+  $("#ordemHint").textContent=erros.length?"Atenção: "+erros.join("; "):"";
 }
 function toggleDec(){
   const v=$("#frm").decisao.value;
@@ -864,6 +900,7 @@ function toggleDec(){
   $("#boxAut").classList.toggle("hide",v!=="Autorizado");
   $("#boxEmi").classList.toggle("hide",v!=="Autorizado");
   if(v==="Autorizado")syncAut();
+  hintNAut();
 }
 /* ================= DUPLICADOS ================= */
 const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
@@ -874,18 +911,19 @@ function duplicados(r,ignorarId){
   const out=[];
   dados.forEach(o=>{
     if(o.id===ignorarId)return;
+    const lig=(ehAdenda(r)&&r.adendaDe&&(normCod(o.nAut)===normCod(r.adendaDe)||normCod(o.adendaDe)===normCod(r.adendaDe)))||(ehAdenda(o)&&r.nAut&&normCod(o.adendaDe)===normCod(r.nAut));
     const m=[];let grave=false;
     if(r.distribuicao&&normCod(o.distribuicao)===normCod(r.distribuicao)){m.push("mesma Distribuição");grave=true}
     if(r.nPedido&&normCod(o.nPedido)===normCod(r.nPedido)){m.push("mesmo N.º de Pedido");grave=true}
     if(r.nAut&&normCod(o.nAut)===normCod(r.nAut)){m.push("mesmo N.º de Autorização");grave=true}
     const mesmaEmb=(r.embarcacao&&norm(o.embarcacao)===norm(r.embarcacao))||(r.cjId&&normCod(o.cjId)===normCod(r.cjId));
-    if(mesmaEmb&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
-    if(mesmaEmb&&!grave&&ativo(o)){
+    if(mesmaEmb&&!lig&&r.dataEntrada&&o.dataEntrada===r.dataEntrada){m.push("mesma embarcação e mesma Data Entrada");grave=true}
+    if(mesmaEmb&&!grave&&!lig&&ativo(o)){
       const om=o.decisao==="Autorizado"?mapa(o,"aut"):mapa(o,"sol"),rm=mapa(r,"sol"),comum={};
       Object.entries(rm).forEach(([a,ts])=>{const c=ts.filter(t=>(om[a]||[]).includes(t));if(c.length)comum[a]=c});
       if(Object.keys(comum).length)m.push(`a embarcação já tem pedido ${o.decisao==="Autorizado"?"autorizado e válido":"pendente"} para ${txtMap(comum)}`);
     }
-    if(!m.length&&r.titular&&(r.embarcacao||r.cjId)&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
+    if(!m.length&&!lig&&r.titular&&(r.embarcacao||r.cjId)&&norm(o.titular)===norm(r.titular)&&mesmaEmb&&
        pares(mapa(r,"sol")).length&&pares(mapa(o,"sol")).sort().join()===pares(mapa(r,"sol")).sort().join())
       m.push("mesmo titular, embarcação e as mesmas áreas/artes");
     if(m.length)out.push({rec:o,motivos:m,grave});
@@ -899,6 +937,7 @@ function dupSet(){
   const s=new Set(),idx={};
   const add=(k,id)=>{if(!k)return;(idx[k]=idx[k]||[]).push(id)};
   dados.forEach(r=>{add("d|"+normCod(r.distribuicao),r.id);if(r.nPedido)add("n|"+normCod(r.nPedido),r.id);if(r.nAut)add("a|"+normCod(r.nAut),r.id);
+    if(ehAdenda(r))return;
     if(r.embarcacao&&r.dataEntrada)add("e|"+norm(r.embarcacao)+"|"+r.dataEntrada,r.id);
     if(r.cjId&&r.dataEntrada)add("c|"+normCod(r.cjId)+"|"+r.dataEntrada,r.id)});
   Object.values(idx).forEach(ids=>{if(ids.length>1)ids.forEach(i=>s.add(i))});
@@ -908,7 +947,7 @@ function lerFormDup(){
   const f=$("#frm");
   return {distribuicao:f.distribuicao.value.trim(),nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
     embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),dataEntrada:f.dataEntrada.value,solMap:getMx("mxSol"),
-    nAut:f.decisao.value==="Autorizado"?f.nAut.value.trim():""};
+    nAut:f.decisao.value==="Autorizado"&&f.tipoPedido.value!=="Adenda"?f.nAut.value.trim():"",tipoPedido:f.tipoPedido.value,adendaDe:f.adendaDe.value.trim()};
 }
 function atualizarDup(){
   if(!$("#modal").classList.contains("open"))return;
@@ -951,12 +990,111 @@ const docsCompleto=r=>DOCS_OBR.every(d=>(r.docs||[]).includes(d));
 function nifValido(n){n=String(n||"").replace(/\s/g,"");if(!/^\d{9}$/.test(n))return false;
   let s=0;for(let i=0;i<8;i++)s+=(+n[i])*(9-i);const c=11-(s%11);return (c>=10?0:c)===+n[8]}
 function validarNif(){const v=$("#frm").nif.value.trim();$("#nifHint").textContent=v&&/^\d/.test(v)&&!nifValido(v)?"NIF/NIPC inválido (verifique os dígitos)":""}
+/* ---- N.º de autorização sequencial ---- */
+const PREF_AUT="RAMPA-P", CNT_COL="rampap_contadores";
+let contadores={},unsubCnt=null;
+const fmtNAut=(ano,n)=>`${PREF_AUT}-${ano}-${String(n).padStart(3,"0")}`;
+const anoAut=()=>{const e=$("#frm").dtEmissao.value;return +(e?e.slice(0,4):new Date().getFullYear())};
+function maxNAut(ano){ // maior n.º já usado nesse ano (registos, reciclagem e observações)
+  let mx=0;const re=/RAMPA[\s_-]*P[\s_-]*(\d{4})[\s_-]+(\d+)/gi;
+  todos.forEach(r=>{[r.nAut,r.observacoes].forEach(t=>{let m;re.lastIndex=0;while(m=re.exec(t||""))if(+m[1]===ano)mx=Math.max(mx,+m[2])})});
+  return mx;
+}
+const proxNAut=ano=>fmtNAut(ano,Math.max(maxNAut(ano),contadores[ano]||0)+1);
+function hintNAut(){
+  const f=$("#frm");if(!f||!sess)return;
+  const h=$("#nAutHint");if(!h)return;
+  const ad=f.tipoPedido&&f.tipoPedido.value==="Adenda";
+  f.nAut.closest("label").style.display=ad?"none":"";
+  if(ad){h.textContent="";return}
+  h.textContent=f.decisao.value==="Autorizado"&&!f.nAut.value.trim()?`Atribuído automaticamente ao guardar (próximo previsto: ${proxNAut(anoAut())})`:"";
+}
+function desbloquearNAut(){
+  if(sess.role!=="admin")return;
+  if(!confirm("Editar o N.º de Autorização manualmente?\nUse apenas para corrigir números ou registar autorizações emitidas fora da app."))return;
+  const i=$("#frm").nAut;i.readOnly=false;i.focus();
+}
+async function atribuirNAut(ano){
+  const ref=db.collection(CNT_COL).doc("aut_"+ano),base=maxNAut(ano);
+  const n=await db.runTransaction(async t=>{
+    const d=await t.get(ref);const ult=Math.max(d.exists?(d.data().ultimo||0):0,base),novo=ult+1;
+    t.set(ref,{ano,ultimo:novo,alterado:Date.now(),alteradoPorEmail:sess.email});return novo;
+  });
+  contadores[ano]=Math.max(contadores[ano]||0,n);
+  return fmtNAut(ano,n);
+}
+function ouvirContador(){
+  if(unsubCnt)unsubCnt();const ano=new Date().getFullYear();
+  unsubCnt=db.collection(CNT_COL).doc("aut_"+ano).onSnapshot(d=>{contadores[ano]=d.exists?(d.data().ultimo||0):0;hintNAut();mostrarContador()},()=>{});
+}
+function mostrarContador(){
+  if(!sess||sess.role!=="admin"||!$("#cntAno"))return;
+  if(!$("#cntAno").value)$("#cntAno").value=new Date().getFullYear();
+  const ano=+$("#cntAno").value,usado=Math.max(maxNAut(ano),contadores[ano]||0);
+  if(document.activeElement!==$("#cntUlt"))$("#cntUlt").value=usado;
+  $("#cntInfo").textContent=ano?`Próximo número a atribuir em ${ano}: ${fmtNAut(ano,usado+1)}`:"";
+}
+async function gravarContador(){
+  const ano=+$("#cntAno").value,ult=+$("#cntUlt").value,mx=maxNAut(ano);
+  if(!ano||ult<0){alert("Indique o ano e o último número.");return}
+  if(ult<mx&&!confirm(`Já existem autorizações até ao n.º ${mx} em ${ano}. A app continuará a partir de ${fmtNAut(ano,mx+1)}. Gravar mesmo assim?`))return;
+  try{await db.collection(CNT_COL).doc("aut_"+ano).set({ano,ultimo:ult,alterado:Date.now(),alteradoPorEmail:sess.email});contadores[ano]=ult;mostrarContador();toast("Numeração atualizada")}
+  catch(e){alert("Erro ao gravar: "+e.message)}
+}
+
+/* ---- adendas ---- */
+const ehAdenda=r=>r&&r.tipoPedido==="Adenda";
+const original=nA=>nA?dados.find(o=>!ehAdenda(o)&&o.nAut&&normCod(o.nAut)===normCod(nA)):null;
+const adendasDe=r=>r&&r.nAut&&!ehAdenda(r)?dados.filter(o=>ehAdenda(o)&&normCod(o.adendaDe)===normCod(r.nAut)).sort((a,b)=>(a.dtEmissao||a.dataEntrada||"").localeCompare(b.dtEmissao||b.dataEntrada||"")||(a.criado||0)-(b.criado||0)):[];
+// situação em vigor de uma autorização: a última adenda autorizada, ou o próprio pedido
+function vigente(r){if(ehAdenda(r)||r.decisao!=="Autorizado")return r;const a=adendasDe(r).filter(x=>x.decisao==="Autorizado");return a.length?a[a.length-1]:r}
+function toggleTipo(){
+  const f=$("#frm"),ad=f.tipoPedido.value==="Adenda";
+  $("#boxAdDe").classList.toggle("hide",!ad);
+  if(!ad)f.adendaDe.value="";
+  infoOriginal();hintNAut();atualizarDup();
+}
+function infoOriginal(){
+  const f=$("#frm"),o=original(f.adendaDe.value),i=$("#adDeInfo");
+  if(f.tipoPedido.value!=="Adenda"){i.textContent="";return}
+  i.innerHTML=!f.adendaDe.value?"Indique a autorização que é alterada":o?`${esc(o.distribuicao)} — ${esc(o.titular||"")}${o.embarcacao?" / "+esc(o.embarcacao):""} <button type="button" class="b-sm" onclick="abrirOutro('${o.id}')">Abrir</button>`:'<span style="color:var(--bad)">Autorização não encontrada na app</span>';
+}
+function escolherOriginal(){
+  const f=$("#frm"),o=original(f.adendaDe.value);infoOriginal();
+  if(!o)return;
+  f.adendaDe.value=o.nAut;
+  const vz=["titular","embarcacao","cjId"].every(k=>!f[k].value.trim())&&!Object.keys(getMx("mxSol")).length;
+  if(!vz&&!confirm("Copiar para esta adenda os dados da autorização "+o.nAut+" (titular, requerente, embarcação e áreas/artes em vigor)?"))return;
+  copiarOriginal(o);
+}
+function copiarOriginal(o){
+  const f=$("#frm"),v=vigente(o);
+  ["titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais"].forEach(k=>f[k].value=v[k]||o[k]||"");
+  setMx("mxSol",mapa(v,"aut"));validarNif();atualizarDup();
+  toast("Dados copiados — altere o que muda com esta adenda");
+}
+function novaAdenda(){
+  const o=dados.find(x=>x.id===editId);if(!o||!o.nAut)return;
+  fechar();
+  setTimeout(()=>{abrir(null,{tipoPedido:"Adenda",adendaDe:o.nAut,decisao:"Pendente"});copiarOriginal(o);
+    $("#frm").dataEntrada.value=hoje();$("[name=distribuicao]").select()},50);
+}
+function listaAdendas(r){
+  const box=$("#adLista");
+  if(!r||ehAdenda(r)||!r.nAut){box.classList.add("hide");return}
+  const a=adendasDe(r);if(!a.length){box.classList.add("hide");return}
+  const v=vigente(r);
+  box.innerHTML=`<b>Adendas a esta autorização (${a.length})</b><ul>${a.map(x=>`<li>${esc(x.distribuicao)} — ${esc(x.decisao||"Pendente")}${x.dtEmissao&&x.decisao==="Autorizado"?" em "+fmt(x.dtEmissao):""}<button type="button" onclick="abrirOutro('${x.id}')">Abrir</button></li>`).join("")}</ul>`+
+    (v!==r?`<div style="margin-top:4px"><b>Em vigor</b> (adenda ${esc(v.distribuicao)}): ${esc(txtMap(mapa(v,"aut")))||"—"}${v.validade?" · válida até "+fmt(v.validade):""}</div>`:"");
+  box.classList.remove("hide");
+}
+
 function proxDistrib(){
   const ano=new Date().getFullYear();let pref="SGC0060",max=0;
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtOficio","nAut","dtEmissao","validade","observacoes"];
+const CAMPOS=["tipoPedido","adendaDe","distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtProc","dtEnvio","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -964,6 +1102,8 @@ function preencher(r){
   if(!r.docs&&r.documentos){docs=["Outro"];f.docOutro.value=r.documentos} // registos antigos (texto livre)
   setChk("docs",docs);docsChange();
   f.decisao.value=r.decisao||"Pendente";
+  f.tipoPedido.value=r.tipoPedido||"Novo";
+  if(!r.dtEmissao&&r.dtOficio)f.dtEmissao.value=r.dtOficio; // registos antigos
   setMx("mxSol",mapa(r,"sol"));setMx("mxAut",mapa(r,"aut"));
 }
 
@@ -971,10 +1111,12 @@ function preencher(r){
 function abrir(id,base){
   const f=$("#frm");f.reset();editId=id||null;editBase=null;
   $("#pdfBox").classList.add("hide");$$(".from-pdf").forEach(e=>e.classList.remove("from-pdf"));
+  f.nAut.readOnly=true;
   $("#conflict").classList.add("hide");
   const r=id?dados.find(x=>x.id===id):(base||null);
   $("#mTitle").textContent=id?(sess.role==="consulta"?"Consultar pedido":"Editar pedido"):"Novo pedido";
   ["bDel","bDup","bPrint"].forEach(b=>$("#"+b).classList.toggle("hide",!id));
+  $("#bAd").classList.toggle("hide",!(id&&r&&!ehAdenda(r)&&r.decisao==="Autorizado"&&r.nAut));
   const ro=sess.role==="consulta";$$("#frm fieldset").forEach(fs=>fs.disabled=ro);
   $("#bOf").classList.toggle("hide",!id||!r||!["Autorizado","Indeferido"].includes(r.decisao));
   if(r){preencher(r);if(id)editBase=r.alterado||0}
@@ -982,7 +1124,9 @@ function abrir(id,base){
   if(!id)f.distribuicao.value=proxDistrib();
   metaInfo(id?r:null);
   $("#dupBox").classList.add("hide");
-  calcTempo();toggleDec();syncAut();docsChange();validarNif();
+  if(!f.tipoPedido.value)f.tipoPedido.value="Novo";
+  $("#boxAdDe").classList.toggle("hide",f.tipoPedido.value!=="Adenda");infoOriginal();listaAdendas(id?r:null);
+  calcTempo();toggleDec();syncAut();docsChange();validarNif();hintNAut();
   $("#modal").classList.add("open");atualizarDup();
   if(!$("#dupBox").classList.contains("hide"))toast("⚠ Este pedido tem possível duplicação de informação");
 }
@@ -1037,8 +1181,9 @@ function verificarConflito(){
 }
 function recarregarEdicao(){const r=dados.find(x=>x.id===editId);if(!r)return;preencher(r);editBase=r.alterado||0;metaInfo(r);calcTempo();toggleDec();$("#conflict").classList.add("hide")}
 
-function guardar(e){
-  e.preventDefault();if(sess.role==="consulta")return;const f=$("#frm");
+let _aGuardar=false;
+async function guardar(e){
+  e.preventDefault();if(sess.role==="consulta"||_aGuardar)return;const f=$("#frm");
   const dist=f.distribuicao.value.trim();
   const dups=duplicados(lerFormDup(),editId);
   if(dups.length&&!confirm("⚠ POSSÍVEL DUPLICAÇÃO DE INFORMAÇÃO\n\n"+dups.map(x=>`• ${x.rec.distribuicao} (${x.rec.titular||"sem titular"}): ${x.motivos.join("; ")}`).join("\n")+"\n\nGuardar mesmo assim?"))return;
@@ -1049,9 +1194,25 @@ function guardar(e){
     if(!cur&&!confirm("Este pedido foi enviado para a reciclagem por outro utilizador. Guardar estes dados (o pedido volta à lista)?"))return;
     if(cur&&(cur.alterado||0)!==editBase&&!confirm(`${cur.alteradoPor||"Outro utilizador"} alterou este pedido depois de o abrir.\nGuardar e substituir as alterações dele?`))return;
   }
-  if(dec==="Autorizado"&&!f.nAut.value.trim()&&!confirm("Pedido autorizado sem N.º de Autorização. Guardar mesmo assim?")){f.nAut.focus();return}
   const solM=getMx("mxSol"),autM=dec==="Autorizado"?getMx("mxAut"):{};
   if(dec==="Autorizado"&&!Object.keys(autM).length&&!confirm("Decisão Autorizado sem nenhuma área/arte autorizada. Guardar mesmo assim?"))return;
+  const antes=editId?dados.find(x=>x.id===editId):null;
+  if(antes&&antes.decisao==="Autorizado"&&antes.nAut&&dec!=="Autorizado"&&adendasDe(antes).length&&!confirm(`A autorização ${antes.nAut} tem ${adendasDe(antes).length} adenda(s) associada(s). Mudar a decisão deste pedido?`))return;
+  if(antes&&antes.decisao==="Autorizado"&&antes.nAut&&dec!=="Autorizado"&&!confirm(`Este pedido tinha a autorização ${antes.nAut}. Ao mudar a decisão para ${dec}, esse número deixa de estar associado ao pedido (fica um salto na numeração).\nContinuar?`))return;
+  const adenda=f.tipoPedido.value==="Adenda";
+  if(adenda){
+    if(!f.adendaDe.value.trim()){alert("Indique a autorização a que esta adenda diz respeito.");f.adendaDe.focus();return}
+    if(!original(f.adendaDe.value)&&!confirm(`A autorização ${f.adendaDe.value} não existe na app. Guardar a adenda mesmo assim?`))return;
+    f.nAut.value="";
+  }
+  if(!adenda&&dec==="Autorizado"&&!f.nAut.value.trim()){
+    if(!navigator.onLine){alert("Sem ligação à internet: o N.º de Autorização só pode ser atribuído com ligação. Tente guardar de novo quando estiver ligado.");return}
+    _aGuardar=true;
+    try{f.nAut.value=await atribuirNAut(anoAut())}
+    catch(err){_aGuardar=false;alert("Não foi possível atribuir o N.º de Autorização: "+err.message);return}
+    _aGuardar=false;
+    toast("Atribuída a autorização "+f.nAut.value);
+  }
   const agora=Date.now(),ant=editId?dados.find(x=>x.id===editId):null;
   const r={
     distribuicao:dist,dataEntrada:f.dataEntrada.value,nPedido:f.nPedido.value.trim(),titular:f.titular.value.trim(),
@@ -1061,13 +1222,15 @@ function guardar(e){
     decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
     autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
-    nAut:dec==="Autorizado"?f.nAut.value.trim():"",dtEmissao:dec==="Autorizado"?f.dtEmissao.value:"",validade:dec==="Autorizado"?f.validade.value:"",dtOficio:dec==="Indeferido"?f.dtOficio.value:"",observacoes:f.observacoes.value,
+    tipoPedido:adenda?"Adenda":"Novo",adendaDe:adenda?(original(f.adendaDe.value)?.nAut||f.adendaDe.value.trim()):"",
+    nAut:!adenda&&dec==="Autorizado"?f.nAut.value.trim():"",dtProc:f.dtProc.value,dtEmissao:f.dtEmissao.value,dtEnvio:f.dtEnvio.value,validade:dec==="Autorizado"?f.validade.value:"",dtOficio:"",observacoes:f.observacoes.value,
     criado:ant?.criado||agora,criadoPor:ant?.criadoPor||sess.nome,criadoPorEmail:ant?.criadoPorEmail||sess.email,
     alterado:agora,alteradoPor:sess.nome,alteradoPorEmail:sess.email,apagado:false
   };
   const ref=editId?col.doc(editId):col.doc();
   ref.set(r).catch(err=>alert("Erro ao gravar: "+err.message));
-  fechar();toast(navigator.onLine?"Pedido guardado":"Guardado — será sincronizado quando houver ligação");
+  const nA=r.nAut&&(!antes||antes.nAut!==r.nAut)?" · Autorização "+r.nAut:"";
+  fechar();toast((navigator.onLine?"Pedido guardado":"Guardado — será sincronizado quando houver ligação")+nA);
 }
 function apagar(){
   if(sess.role==="consulta")return;
@@ -1077,14 +1240,15 @@ function apagar(){
 }
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
-  ["nPedido","nAut","dtOficio","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
+  ["nPedido","nAut","dtOficio","dtProc","dtEnvio","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
   r.decisao="Pendente";r.solMap=mapa(r,"sol");r.autMap={};r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
 
 /* ================= PESQUISA ================= */
 function estadoValidade(r){
-  if(r.decisao!=="Autorizado"||!r.validade)return "";
+  if(r.decisao!=="Autorizado")return "";r=vigente(r);
+  if(!r.validade)return "";
   const d=dias(hoje(),r.validade);return d<0?"expirado":d<=30?"expira":"valido";
 }
 function getFiltros(){
@@ -1094,7 +1258,7 @@ function getFiltros(){
   return o;
 }
 function nFiltros(F){
-  let n=0;["distribuicao","nPedido","nAut","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst"].forEach(k=>{if(F[k])n++});
+  let n=0;["distribuicao","nPedido","nAut","titular","embarcacao","cjId","pais","decisao","sitDRP","val","tMin","tMax","dDe","dAte","por","dup","docEst","tipo"].forEach(k=>{if(F[k])n++});
   return n+["AS","TS","AA","TA","DC"].filter(k=>F[k].length).length;
 }
 const contem=(txt,s)=>!s||String(txt||"").toLowerCase().includes(s.toLowerCase());
@@ -1110,7 +1274,7 @@ function matchMapa(m,A,mA,T,mT){
 function filtrar(F){
   F=F||getFiltros();
   return dados.filter(r=>{
-    if(F.q&&![r.distribuicao,r.nPedido,r.nAut,r.titular,r.nif,r.email,r.morada,r.representante,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
+    if(F.q&&![r.distribuicao,r.nPedido,r.nAut,r.adendaDe,r.titular,r.nif,r.email,r.morada,r.representante,r.embarcacao,r.cjId,r.pais,r.observacoes,r.pareceres,r.documentos,docsTxt(r)].join(" ").toLowerCase().includes(F.q))return false;
     if(!contem(r.distribuicao,F.distribuicao)||!contem(r.nPedido,F.nPedido)||!contem(r.nAut,F.nAut)||!contem(r.titular,F.titular)||!contem(r.embarcacao,F.embarcacao)||!contem(r.cjId,F.cjId))return false;
     if(F.pais&&(r.pais||"")!==F.pais)return false;
     if(F.decisao&&(r.decisao||"Pendente")!==F.decisao)return false;
@@ -1118,10 +1282,16 @@ function filtrar(F){
     if(F.sitDRP==="na"&&!(r.dtDRP&&!r.dtDRPM))return false;
     if(F.sitDRP==="parado"&&!parado(r))return false;
     if(F.sitDRP==="concl"&&!r.dtDRPM)return false;
+    if(F.sitDRP==="proc"&&!(r.dtProc&&!dtAss(r)))return false;
+    if(F.sitDRP==="assin"&&!(dtAss(r)&&!r.dtEnvio))return false;
+    if(F.sitDRP==="env"&&!r.dtEnvio)return false;
     if(F.val&&estadoValidade(r)!==F.val)return false;
     if(F.tMin!==""||F.tMax!==""){const t=dias(r.dtDRP,r.dtDRPM);if(t===null)return false;if(F.tMin!==""&&t<+F.tMin)return false;if(F.tMax!==""&&t>+F.tMax)return false}
     if(F.dDe||F.dAte){const d=r[F.dCampo];if(!d)return false;if(F.dDe&&d<F.dDe)return false;if(F.dAte&&d>F.dAte)return false}
     if(F.dup&&!dupSet().has(r.id))return false;
+    if(F.tipo==="Adenda"&&!ehAdenda(r))return false;
+    if(F.tipo==="Novo"&&ehAdenda(r))return false;
+    if(F.tipo==="comAd"&&!adendasDe(r).length)return false;
     if(F.docEst==="completa"&&!docsCompleto(r))return false;
     if(F.docEst==="incompleta"&&docsCompleto(r))return false;
     if(F.DC.length){const d=r.docs||[];
@@ -1161,6 +1331,7 @@ function render(){
   const uniq=k=>[...new Set(dados.map(r=>r[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt"));
   $("#lTit").innerHTML=uniq("titular").map(v=>`<option value="${esc(v)}">`).join("");
   $("#lEmb").innerHTML=uniq("embarcacao").map(v=>`<option value="${esc(v)}">`).join("");
+  $("#lAut").innerHTML=dados.filter(o=>!ehAdenda(o)&&o.nAut&&o.decisao==="Autorizado").map(o=>`<option value="${esc(o.nAut)}">${esc(o.titular||"")}${o.embarcacao?" / "+esc(o.embarcacao):""}</option>`).join("");
   $("#lCj").innerHTML=uniq("cjId").map(v=>`<option value="${esc(v)}">`).join("");
   $("#lPais").innerHTML=[...new Set([...PAISES,...uniq("pais")])].map(v=>`<option value="${esc(v)}">`).join("");
   const fillSel=(id,vals,todos)=>{const e=$(id),cur=e.value;e.innerHTML=`<option value="">${todos}</option>`+vals.map(v=>`<option ${v===cur?"selected":""}>${esc(v)}</option>`).join("")};
@@ -1184,7 +1355,7 @@ function render(){
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}</td>
-    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}</div>`:""}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?valTag(r):""}</td></tr>`).join("")
+    <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${ehAdenda(r)?`<div><span class="tag t-ad">Adenda à ${esc(r.adendaDe)}</span></div>`:r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}${adendasDe(r).length?` · <b>${adendasDe(r).length} adenda${adendasDe(r).length>1?"s":""}</b>`:""}</div>`:""}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?valTag(vigente(r)):""}</td></tr>`).join("")
     :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
   $("#info").textContent=`${lst.length} de ${dados.length} pedidos${n||F.q?" (pesquisa ativa)":""}.`;
   $("#stats").innerHTML=statsHTML(lst);
@@ -1203,10 +1374,14 @@ function docsCel(r){
   const d=r.docs,falta=DOCS_OBR.filter(x=>!d.includes(x));
   return esc(d.join(", "))+(falta.length?` <span class="late" title="Em falta: ${falta.join(", ")}">⚠</span>`:"");
 }
+const dtAss=r=>r.dtEmissao||r.dtOficio||"";
 function dtEmiCel(r){
-  if(r.decisao==="Autorizado")return fmt(r.dtEmissao);
-  if(r.decisao==="Indeferido")return r.dtOficio?`<span class="small">Ofício ${fmt(r.dtOficio)}</span>`:"";
-  return "";
+  const e=dtAss(r);let h="";
+  if(e)h=r.decisao==="Indeferido"?`<span class="small">Ofício ${fmt(e)}</span>`:fmt(e);
+  else if(r.dtProc)h=`<span class="small">p/ assinatura ${fmt(r.dtProc)}</span>`;
+  if(r.dtEnvio)h+=`<div class="small">enviado ${fmt(r.dtEnvio)}</div>`;
+  else if(e&&r.decisao!=="Pendente")h+=`<div class="small" style="color:var(--warn)">por enviar</div>`;
+  return h;
 }
 function statsHTML(lst){
   const ds=dupSet(),nd=lst.filter(r=>ds.has(r.id)).length;
@@ -1232,7 +1407,7 @@ function tab(t){
   $("#pesquisa").classList.toggle("hide",t==="reciclagem"||t==="utilizadores");
   if(t==="graficos")renderCharts();
   if(t==="reciclagem")renderLixo();
-  if(t==="utilizadores")renderUsers();
+  if(t==="utilizadores"){renderUsers();mostrarContador()}
 }
 
 /* ================= GRÁFICOS ================= */
@@ -1336,8 +1511,8 @@ function imprimirHTML(h,landscape){
 }
 const logoSrc=()=>$("header .logo").src;
 function descreverFiltros(F){
-  const d=[],L={dataEntrada:"Data Entrada",dtDRP:"Dt. envio DRP",dtDRPM:"Dt. envio DRPM",dtEmissao:"Dt. Emissão",validade:"Validade"};
-  const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM"};
+  const d=[],L={dtProc:"Dt. processamento",dtEnvio:"Dt. envio ao requerente",dataEntrada:"Data Entrada",dtDRP:"Dt. envio DRP",dtDRPM:"Dt. envio DRPM",dtEmissao:"Dt. Emissão",validade:"Validade"};
+  const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM",proc:"enviado para assinatura",assin:"assinado, por enviar",env:"enviado ao requerente"};
   const val={valido:"válidos",expira:"a expirar",expirado:"expirados"};
   if(F.q)d.push(`texto “${F.q}”`);
   [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["nAut","N.º Autorização"],["titular","Titular"],["embarcacao","Embarcação"],["cjId","Conj. Identificação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
@@ -1345,6 +1520,7 @@ function descreverFiltros(F){
   if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias`);
   if(F.dDe||F.dAte)d.push(`${L[F.dCampo]}: ${F.dDe?fmt(F.dDe):"…"} a ${F.dAte?fmt(F.dAte):"…"}`);
   if(F.dup)d.push("só possíveis duplicados");
+  if(F.tipo)d.push({Novo:"só pedidos novos",Adenda:"só adendas",comAd:"autorizações com adendas"}[F.tipo]);
   if(F.docEst)d.push("Documentação "+F.docEst);
   if(F.DC.length)d.push(`Documentos (${F.mDC==="all"?"todos":F.mDC==="none"?"em falta":"algum"}): ${F.DC.join(", ")}`);
   [["AS","Áreas sol.","mAS"],["TS","Artes sol.","mTS"],["AA","Áreas aut.","mAA"],["TA","Artes aut.","mTA"]].forEach(([k,l,m])=>{if(F[k].length)d.push(`${l} (${F[m]==="all"?"todas":"alguma"}): ${F[k].join(", ")}`)});
@@ -1363,11 +1539,11 @@ function imprimirListagem(){
   const j=a=>esc((a||[]).join(", "));
   const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc(txtMap(mapa(r,"sol")))}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
-    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?fmt(r.validade):""}</td></tr>`}).join("");
+    <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(dtAss(r))}</td><td>${fmt(r.dtEnvio)}</td><td>${r.decisao==="Autorizado"?fmt(r.validade):""}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
   imprimirHTML(`<div class="pf">${cabecalhoPrint("Rampa-P — Listagem",`<b>Critérios:</b> ${esc(descreverFiltros(F))}<br><b>${lst.length}</b> pedidos — ${n("Pendente")} pendentes, ${n("Autorizado")} autorizados, ${n("Indeferido")} indeferidos`)}
    <table class="lst"><thead><tr><th>Distribuição</th><th>Data Entrada</th><th>N.º Pedido</th><th>Titular</th><th>Embarcação</th><th>Conj. Ident.</th><th>País</th><th>Solicitado (área: artes)</th><th>Docs</th>
-   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table><p class="sub">Artes: ${esc(LEGENDA)}</p></div>`,true);
+   <th>Envio DRP</th><th>Envio DRPM</th><th>Dias DRP</th><th>Decisão</th><th>Autorizado (área: artes)</th><th>Dt. Emissão</th><th>Envio</th><th>Validade</th></tr></thead><tbody>${linhas}</tbody></table><p class="sub">Artes: ${esc(LEGENDA)}</p></div>`,true);
 }
 function imprimirRelatorio(){
   if(!charts.length){toast("Os gráficos ainda não estão disponíveis");return}
@@ -1388,7 +1564,7 @@ function abrirOficio(){
   ofRec=dados.find(x=>x.id===editId);if(!ofRec)return;
   const c=ofCfg();
   $("#ofEnt").value=c.ent;$("#ofLocal").value=c.local;$("#ofCargo").value=c.cargo;$("#ofAss").value=c.ass;
-  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value=ofRec.morada||"";$("#ofData").value=(ofRec.decisao==="Indeferido"?ofRec.dtOficio:ofRec.dtEmissao)||hoje();
+  $("#ofDest").value=ofRec.titular||"";$("#ofMor").value=ofRec.morada||"";$("#ofData").value=dtAss(ofRec)||hoje();
   $("#ofLogo").src=logoSrc();
   gerarOficio(false);$("#mOf").classList.add("open");
 }
@@ -1405,12 +1581,14 @@ function gerarOficio(confirmar){
   if(confirmar&&!confirm("Repor o texto original? As alterações feitas ao texto perdem-se."))return;
   const r=ofRec,lst=a=>(a||[]).join(", ")||"—";
   const emb=`${r.embarcacao||"—"}${r.cjId?", conjunto de identificação "+r.cjId:""}${r.pais?" ("+r.pais+")":""}`;
-  let t=`Assunto: Pedido de autorização de pesca — ${r.embarcacao||r.titular||""}${r.cjId?" ("+r.cjId+")":""}\n\n`;
-  t+=`Relativamente ao pedido de autorização de pesca${r.nPedido?" n.º "+r.nPedido:""}, entrado nestes serviços em ${fmt(r.dataEntrada)||"—"}, referente à embarcação ${emb}, informa-se V. Ex.ª de que o mesmo foi `;
+  const ad=ehAdenda(r);
+  let t=`Assunto: ${ad?`Adenda à autorização n.º ${r.adendaDe}`:"Pedido de autorização de pesca"} — ${r.embarcacao||r.titular||""}${r.cjId?" ("+r.cjId+")":""}\n\n`;
+  t+=ad?`Relativamente ao pedido de adenda à autorização n.º ${r.adendaDe}${r.nPedido?" (pedido n.º "+r.nPedido+")":""}, entrado nestes serviços em ${fmt(r.dataEntrada)||"—"}, referente à embarcação ${emb}, informa-se V. Ex.ª de que o mesmo foi `
+    :`Relativamente ao pedido de autorização de pesca${r.nPedido?" n.º "+r.nPedido:""}, entrado nestes serviços em ${fmt(r.dataEntrada)||"—"}, referente à embarcação ${emb}, informa-se V. Ex.ª de que o mesmo foi `;
   if(r.decisao==="Autorizado"){
     const am=mapa(r,"aut"),sm=mapa(r,"sol"),nao={};
     Object.entries(sm).forEach(([a,ts])=>{const f=ts.filter(t=>!(am[a]||[]).includes(t));if(f.length)nao[a]=f});
-    t+=`AUTORIZADO${r.nAut?` (Autorização n.º ${r.nAut})`:""}, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
+    t+=ad?`DEFERIDO, passando a autorização n.º ${r.adendaDe} a abranger as seguintes áreas e artes de pesca:`:`AUTORIZADO${r.nAut?` (Autorização n.º ${r.nAut})`:""}, nas seguintes áreas e artes de pesca:\n\n${Object.entries(am).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")||"—"}\n\nValidade: de ${fmt(r.dtEmissao)||"—"} até ${fmt(r.validade)||"—"}.\n`;
     if(Object.keys(nao).length)t+=`\nNão foi autorizado o seguinte, igualmente solicitado:\n${Object.entries(nao).map(([a,ts])=>`• Área ${a}: ${ts.map(nomeArte).join(", ")}`).join("\n")}\n`;
   }else{
     t+=`INDEFERIDO, com o seguinte fundamento:\n\n${r.justificacao||"—"}\n`;
@@ -1431,11 +1609,11 @@ function imprimir(){
     ${row("Nome do Titular",esc(r.titular))}${r.tipoReq?row("Tipologia",esc(r.tipoReq)):""}${row("NIF / NIPC",esc(r.nif))}${row("Morada",esc(r.morada))}${row("Email",esc(r.email))}${row("Telefone",esc(r.telefone))}${r.representante?row("Representante",esc(r.representante)):""}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
    <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
-    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}</table>
-   <h3>Decisão</h3><table>${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
+    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${dias(r.dataEntrada,r.dtEnvio)!==null?row("Tempo total do processo",dias(r.dataEntrada,r.dtEnvio)+" dias"):""}</table>
+   <h3>Decisão</h3><table>${ehAdenda(r)?row("Tipo de pedido","Adenda à autorização n.º "+esc(r.adendaDe)):""}${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
-    ${r.decisao==="Autorizado"?row("Dt. Emissão da licença",fmt(r.dtEmissao))+row("Validade",fmt(r.validade)):""}${r.decisao==="Indeferido"?row("Dt. Ofício de indeferimento",fmt(r.dtOficio)):""}</table>
+    ${r.decisao==="Autorizado"?row("Validade",fmt(r.validade)):""}</table>
    <h3>Observações</h3><table>${row("Observações",nl(r.observacoes))}</table></div>`;
   imprimirHTML($("#printArea").innerHTML,false);
 }
@@ -1450,8 +1628,8 @@ function carregarXLSX(){
 const COLS_X=[ // ordem das colunas no Excel exportado / modelo
  ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["tipoReq","Tipologia do Requerente"],["nif","NIF"],["morada","Morada"],["email","Email"],["telefone","Telefone"],["representante","Representante"],["embarcacao","Embarcação"],
  ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["pareceres","Pareceres"],
- ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["nAut","N.º Autorização"],
- ["justificacao","Justificação Indeferimento"],["dtOficio","Dt. Ofício Indeferimento"],["autMap","Autorizado (área: artes)"],["dtEmissao","Dt Emissão"],["validade","Validade"],
+ ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["tipoPedido","Tipo de Pedido"],["adendaDe","Adenda à Autorização"],["nAut","N.º Autorização"],
+ ["justificacao","Justificação Indeferimento"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["validade","Validade"],
  ["observacoes","Observações"],["criadoPor","Registado por"],["alteradoPor","Última alteração por"]];
 const nrm=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const SINON={
@@ -1476,7 +1654,11 @@ const SINON={
  dtDRP:["dt envio drp","data envio drp","envio drp","data de envio drp"],
  dtDRPM:["dt envio drpm","data envio drpm","envio drpm","data de envio drpm"],
  decisao:["decisao","autorizado ou indeferido","estado","situacao"],
+ tipoPedido:["tipo de pedido","tipo pedido"],
+ adendaDe:["adenda a autorizacao","adenda a","adenda","autorizacao original"],
  nAut:["n autorizacao","no autorizacao","numero autorizacao","numero da autorizacao","autorizacao n","n da autorizacao"],
+ dtProc:["dt processamento","data processamento","data de processamento","dt envio para assinatura","envio para assinatura","data envio assinatura"],
+ dtEnvio:["dt envio ao requerente","data envio ao requerente","dt envio requerente","envio ao requerente","data de envio","dt envio","envio"],
  dtOficio:["dt oficio indeferimento","dt oficio","data oficio","data do oficio","data oficio indeferimento"],
  justificacao:["justificacao indeferimento","justificacao","motivo indeferimento","justificacao do indeferimento","fundamento"],
  areasAut:["areas autorizadas","area autorizada","areas aut"],
@@ -1546,14 +1728,19 @@ function interpretarExcel(aoa){
     const txt=k=>String(g(k)).trim();
     if(!L.some(c=>String(c??"").trim()))continue;
     const av=[],r={};
-    ["distribuicao","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
-    ["dataEntrada","dtDRP","dtDRPM","dtEmissao","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
+    ["distribuicao","nPedido","tipoPedido","adendaDe","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
+    ["dataEntrada","dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
     if(mapa.solMap!==undefined&&txt("solMap"))r.solMap=mapaX(g("solMap"),av,"Solicitado");
     else if(mapa.areasSol!==undefined)r.solMap=mapaAreasArtes(g("areasSol"),g("artesSol"),av,"Solicitado");
     if(mapa.autMap!==undefined&&txt("autMap"))r.autMap=mapaX(g("autMap"),av,"Autorizado");
     else if(mapa.areasAut!==undefined)r.autMap=mapaAreasArtes(g("areasAut"),g("artesAut"),av,"Autorizado");
     if(r.tipoReq){const t=nrm(r.tipoReq);r.tipoReq=/colet|empresa|sociedade/.test(t)?"Pessoa coletiva":/particular|singular/.test(t)?"Particular (pessoa singular)":r.tipoReq}
     if(r.nif){r.nif=r.nif.replace(/\s/g,"");if(/^\d+$/.test(r.nif)&&!nifValido(r.nif))av.push(`NIF ${r.nif} inválido`)}
+    if(r.tipoPedido)r.tipoPedido=/adenda/i.test(r.tipoPedido)?"Adenda":"Novo";
+    const mAd=/^adenda\s*(?:a|à)?\s*(.+)$/i.exec(r.nAut||"");if(mAd){r.tipoPedido="Adenda";r.adendaDe=r.adendaDe||mAd[1].trim();r.nAut=""}
+    if(r.adendaDe&&!r.tipoPedido)r.tipoPedido="Adenda";
+    if(r.tipoPedido==="Adenda"&&!r.adendaDe)av.push("adenda sem indicação da autorização original");
+    if(r.tipoPedido==="Adenda"&&r.adendaDe&&!original(r.adendaDe))av.push(`autorização original ${r.adendaDe} não encontrada na app`);
     if(mapa.documentos!==undefined){const d=docsX(g("documentos"));r.docs=d.docs;r.docOutro=d.docOutro}
     if(mapa.decisao!==undefined){const d=decisaoX(g("decisao"));if(d===null){av.push(`decisão “${txt("decisao")}” não reconhecida — fica Pendente`);r.decisao="Pendente"}else r.decisao=d}
     // coerência
@@ -1561,7 +1748,8 @@ function interpretarExcel(aoa){
       if(fora.length){av.push(`autorizado não solicitado em ${a}: ${fora.map(abr).join(", ")} — acrescentado ao solicitado`);r.solMap[a]=ARTES.filter(t=>[...(r.solMap[a]||[]),...fora].includes(t))}})}
     if(r.decisao==="Autorizado"&&r.dtEmissao&&!r.validade)r.validade=r.dtEmissao.slice(0,4)+"-12-31";
     if(r.decisao==="Indeferido"&&!r.justificacao)av.push("indeferido sem justificação");
-    if(r.decisao==="Indeferido"&&(r.dtEmissao||r.validade)){av.push("indeferido não tem licença — Dt Emissão/Validade ignoradas");r.dtEmissao="";r.validade=""}
+    if(r.dtOficio){if(!r.dtEmissao)r.dtEmissao=r.dtOficio;delete r.dtOficio}
+    if(r.decisao!=="Autorizado"&&r.validade){av.push("validade ignorada (só para autorizados)");r.validade=""}
     const erro=!r.distribuicao?"sem Distribuição":"";
     linhas.push({n:i+1,r,av,erro});
   }
@@ -1632,12 +1820,14 @@ async function confirmarImp(){
         Object.entries(x.r).forEach(([k,v])=>{const vazio=v===""||v==null||(Array.isArray(v)&&!v.length)||(typeof v==="object"&&!Array.isArray(v)&&!Object.keys(v).length);if(!vazio)doc[k]=v});
       }else{
         doc={distribuicao:"",dataEntrada:"",nPedido:"",titular:"",tipoReq:"",nif:"",morada:"",email:"",telefone:"",representante:"",embarcacao:"",cjId:"",pais:"",pareceres:"",docs:[],docOutro:"",documentos:"",dtDRP:"",dtDRPM:"",
-          decisao:"Pendente",justificacao:"",dtOficio:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
+          decisao:"Pendente",justificacao:"",dtProc:"",dtEnvio:"",dtOficio:"",solMap:{},autMap:{},nAut:"",dtEmissao:"",validade:"",observacoes:"",...x.r,
           criado:agora,criadoPor:sess.nome,criadoPorEmail:sess.email,apagado:false};
       }
       if(doc.decisao!=="Autorizado"){doc.autMap={};doc.nAut=""}
-      if(doc.decisao!=="Indeferido"){doc.justificacao="";doc.dtOficio=""}
-      if(doc.decisao!=="Autorizado"){doc.dtEmissao="";doc.validade=""}
+      doc.tipoPedido=doc.tipoPedido||"Novo";if(doc.tipoPedido==="Adenda")doc.nAut="";
+      if(doc.decisao!=="Indeferido")doc.justificacao="";
+      if(doc.decisao!=="Autorizado")doc.validade="";
+      if(!doc.dtEmissao&&doc.dtOficio)doc.dtEmissao=doc.dtOficio;doc.dtOficio="";
       const s1=resumo(doc.solMap||{}),s2=resumo(doc.autMap||{});
       Object.assign(doc,{areasSol:s1.areasSol,artesSol:s1.artesSol,areasAut:s2.areasSol,artesAut:s2.artesSol},quem());
       return (x.ex?col.doc(x.ex.id):col.doc()).set(doc).then(()=>ok++).catch(e=>{falhas++;console.error(e)});
@@ -1651,8 +1841,8 @@ function linhaExcel(r){
   const t=dias(r.dtDRP,r.dtDRPM);
   return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,tipoReq:r.tipoReq||"",nif:r.nif||"",morada:r.morada||"",email:r.email||"",telefone:r.telefone||"",representante:r.representante||"",embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
     documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
-    tempo:t??"",decisao:r.decisao||"Pendente",nAut:r.nAut||"",justificacao:r.justificacao||"",dtOficio:r.decisao==="Indeferido"?fmt(r.dtOficio):"",autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
-    dtEmissao:r.decisao==="Autorizado"?fmt(r.dtEmissao):"",validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
+    tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
+    dtEmissao:fmt(dtAss(r)),validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
 }
 function folhaXLSX(linhas){
   const aoa=[COLS_X.map(c=>c[1]),...linhas.map(o=>COLS_X.map(([k])=>o[k]??""))];
@@ -1670,8 +1860,8 @@ async function exportExcel(){
 async function modeloExcel(){
   try{await carregarXLSX()}catch(e){alert(e.message);return}
   const ex={distribuicao:"SGC0060/2026/0001",dataEntrada:"15/01/2026",nPedido:"123/2026",titular:"Nome do titular",tipoReq:"Particular (pessoa singular)",nif:"",morada:"Rua …, Horta",email:"titular@exemplo.pt",telefone:"912345678",representante:"",embarcacao:"Mar Azul",cjId:"H-1234-L",pais:"Portugal",
-    documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",nAut:"45/2026",
-    justificacao:"",dtOficio:"",autMap:"17: Fundo",dtEmissao:"10/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
+    documentos:"DUP, CN, TP",solMap:"17: Fundo, L Mão; 25: Pl Sup",pareceres:"",dtDRP:"20/01/2026",dtDRPM:"05/02/2026",tempo:"",decisao:"Autorizado",tipoPedido:"Novo",adendaDe:"",nAut:"",
+    justificacao:"",autMap:"17: Fundo",dtProc:"08/02/2026",dtEmissao:"10/02/2026",dtEnvio:"12/02/2026",validade:"31/12/2026",observacoes:"Linha de exemplo — apagar antes de importar",criadoPor:"",alteradoPor:""};
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,folhaXLSX([ex]),"Pedidos");
   const ajuda=[["Coluna","Como preencher"],
     ["Distribuição","Obrigatória. Ex.: SGC0060/2026/0001. Se já existir na app, o pedido é ignorado ou atualizado (escolhe ao importar)."],
@@ -1682,8 +1872,10 @@ async function modeloExcel(){
     ["Áreas",AREAS.join(", ")+" (também aceita PMA17, 12A…)"],
     ["Artes",ARTES.map(t=>`${abr(t)} = ${nomeArte(t)}`).join("; ")],
     ["Decisão","Pendente, Autorizado ou Indeferido (vazio = Pendente)."],
-    ["Dt Emissão / Validade","Só para pedidos Autorizados (licença). Se a Validade ficar vazia, fica 31/12 do ano de emissão."],
-    ["Dt. Ofício Indeferimento","Só para pedidos Indeferidos — não há licença, apenas ofício."],
+    ["Dt. Processamento","Data de envio para assinatura."],
+    ["Dt Emissão","Data de assinatura — da autorização ou, nos indeferidos, do ofício."],
+    ["Dt. Envio ao Requerente","Data de envio da autorização / ofício ao requerente."],
+    ["Validade","Só para pedidos Autorizados. Se ficar vazia, fica 31/12 do ano da Dt Emissão."],
     ["Tempo Exec. DRP, Registado por, Última alteração por","Calculados pela app — são ignorados ao importar."],
     ["Alternativa","Pode usar as colunas “Áreas Solicitadas” + “Artes Solicitadas” (e “Áreas/Artes Autorizadas”) em vez das colunas área: artes."]];
   const wa=XLSX.utils.aoa_to_sheet(ajuda);wa["!cols"]=[{wch:34},{wch:110}];XLSX.utils.book_append_sheet(wb,wa,"Instruções");
@@ -1824,11 +2016,11 @@ async function importarPdf(f){
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt Emissão","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
-    r.decisao==="Autorizado"?fmt(r.dtEmissao):"",r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
+    fmt(r.dtProc),fmt(dtAss(r)),fmt(r.dtEnvio),r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
 function exportJSON(){baixar(JSON.stringify({app:"Rampa-P",versao:3,exportado:new Date().toISOString(),exportadoPor:sess.email,dados:todos},null,1),`Rampa-P_backup_${hoje()}.json`,"application/json")}
