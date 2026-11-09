@@ -365,8 +365,8 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
         <label class="f">Validade<select data-f="val" onchange="render()">
           <option value="">Qualquer</option><option value="valido">Válidos</option>
           <option value="expira">A expirar (≤30 dias)</option><option value="expirado">Expirados</option></select></label>
-        <label class="f">Tempo DRP mín. (dias)<input type="number" min="0" data-f="tMin" oninput="render()"></label>
-        <label class="f">Tempo DRP máx. (dias)<input type="number" min="0" data-f="tMax" oninput="render()"></label>
+        <label class="f">Tempo DRP mín. (dias úteis)<input type="number" min="0" data-f="tMin" oninput="render()"></label>
+        <label class="f">Tempo DRP máx. (dias úteis)<input type="number" min="0" data-f="tMax" oninput="render()"></label>
         <label class="f">Data a filtrar<select data-f="dCampo" onchange="render()">
           <option value="dataEntrada">Data Entrada</option><option value="dtDRP">Dt. envio DRP</option>
           <option value="dtDRPM">Dt. envio DRPM</option><option value="dtProc">Dt. processamento</option><option value="dtEmissao">Dt. emissão</option><option value="dtEnvio">Dt. envio ao requerente</option><option value="periodoIni">Período pedido (início)</option><option value="periodoFim">Período pedido (fim)</option><option value="validade">Validade</option></select></label>
@@ -449,6 +449,19 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
       </div>
     </div>
     <div class="tablewrap"><table style="min-width:600px"><thead><tr><th>Email</th><th>Nome</th><th>Perfil</th><th></th></tr></thead><tbody id="tbUsers"></tbody></table></div>
+
+    <div class="secbox" style="margin-top:14px">
+      <h3>📅 Feriados e tolerâncias de ponto</h3>
+      <p class="small">Os prazos são contados em <b>dias úteis</b>: já são descontados os sábados, domingos, feriados nacionais (incluindo Sexta-feira Santa e Corpo de Deus) e o <b>Dia dos Açores</b>, calculados para cada ano.
+      Acrescente aqui feriados municipais (todos os anos, ex.: <code>24/06</code> — São João, Horta) ou dias concretos de tolerância de ponto (ex.: <code>24/12/2026</code>).</p>
+      <div class="addu" style="grid-template-columns:1fr 2fr auto">
+        <label class="f">Data (dd/mm ou dd/mm/aaaa)<input id="ferData" placeholder="24/06"></label>
+        <label class="f">Descrição<input id="ferNome" placeholder="Feriado municipal da Horta"></label>
+        <button onclick="addFeriado()">Acrescentar</button>
+      </div>
+      <div class="gwrap" style="margin-top:8px"><table class="gtab"><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th></th></tr></thead><tbody id="tbFer"></tbody></table></div>
+      <details class="small" style="margin-top:8px"><summary>Ver feriados considerados este ano</summary><div id="ferAno"></div></details>
+    </div>
 
     <div class="secbox" style="margin-top:14px">
       <h3>🔢 Numeração das autorizações</h3>
@@ -538,12 +551,12 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <label class="f full">Pareceres<textarea name="pareceres"></textarea></label>
      <label class="f">Dt. envio DRP<input type="date" name="dtDRP" oninput="calcTempo()"></label>
      <label class="f">Dt. envio DRPM<input type="date" name="dtDRPM" oninput="calcTempo()"></label>
-     <label class="f">Tempo Exec. DRP<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
+     <label class="f">Tempo Exec. DRP (dias úteis)<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
      <label class="f">Dt. processamento<input type="date" name="dtProc" oninput="calcTempo()"><span class="small">Envio para assinatura</span></label>
      <label class="f">Dt. emissão<input type="date" name="dtEmissao" oninput="autoValidade();hintNAut();calcTempo()"><span class="small">Data de assinatura/despacho (autorização ou ofício)</span></label>
      <label class="f">Dt. envio ao requerente<input type="date" name="dtEnvio" oninput="calcTempo()"><span class="small">Envio da autorização / ofício</span></label>
-     <label class="f">Até processamento<input id="tempoProc" readonly placeholder="—"><span class="small">Da Data Entrada à Dt. processamento (e sem o tempo na DRP)</span></label>
-     <label class="f">Tempo total do processo<input id="tempoTot" readonly placeholder="—"><span class="small">Da Data Entrada ao envio ao requerente</span></label>
+     <label class="f">Até processamento<input id="tempoProc" readonly placeholder="—"><span class="small">Dias úteis da Data Entrada à Dt. processamento (e sem o tempo na DRP)</span></label>
+     <label class="f">Tempo total do processo<input id="tempoTot" readonly placeholder="—"><span class="small">Dias úteis da Data Entrada ao envio ao requerente</span></label>
      <span class="hint full" id="ordemHint"></span>
     </div>
    </fieldset>
@@ -694,6 +707,31 @@ const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=d=>d?d.split("-").reverse().join("/"):"";
 const hoje=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+// ---- dias úteis: exclui sábados, domingos, feriados nacionais, Dia dos Açores e feriados/tolerâncias definidos pelo administrador ----
+function pascoa(a){const b=a%19,c=Math.floor(a/100),d=a%100,e=Math.floor(c/4),f=c%4,g=Math.floor((c+8)/25),h=Math.floor((c-g+1)/3),i=(19*b+c-e-h+15)%30,
+  k=Math.floor(d/4),l=d%4,m=(32+2*f+2*k-i-l)%7,n=Math.floor((b+11*i+22*m)/451),mes=Math.floor((i+m-7*n+114)/31),dia=((i+m-7*n+114)%31)+1;return Date.UTC(a,mes-1,dia)}
+const FER_FIXOS=[["01-01","Ano Novo"],["04-25","Dia da Liberdade"],["05-01","Dia do Trabalhador"],["06-10","Dia de Portugal"],["08-15","Assunção de Nossa Senhora"],
+  ["10-05","Implantação da República"],["11-01","Todos os Santos"],["12-01","Restauração da Independência"],["12-08","Imaculada Conceição"],["12-25","Natal"]];
+const _fer={};
+function feriadosAno(a){
+  if(_fer[a])return _fer[a];
+  const m=new Map(),iso=t=>new Date(t).toISOString().slice(0,10),P=pascoa(a),D=86400000;
+  FER_FIXOS.forEach(([md,n])=>m.set(`${a}-${md}`,n));
+  m.set(iso(P-2*D),"Sexta-feira Santa");m.set(iso(P),"Páscoa");m.set(iso(P+60*D),"Corpo de Deus");m.set(iso(P+50*D),"Dia dos Açores");
+  ((typeof cfg!=="undefined"&&cfg&&cfg.feriados)||[]).forEach(f=>{const d=String(f.d||"");const n=f.n||"Feriado/tolerância";
+    if(/^\d{2}-\d{2}$/.test(d))m.set(`${a}-${d}`,n);else if(d.startsWith(a+"-"))m.set(d,n)});
+  return _fer[a]=m;
+}
+const ehUtil=iso=>{const w=new Date(iso+"T12:00:00Z").getUTCDay();return w!==0&&w!==6&&!feriadosAno(+iso.slice(0,4)).has(iso)};
+// n.º de dias úteis decorridos de a até b (conta os dias úteis em ]a, b])
+function du(a,b){
+  if(!a||!b)return null;if(b<a)return -du(b,a);
+  let t=Date.parse(a+"T12:00:00Z"),fim=Date.parse(b+"T12:00:00Z"),n=0;
+  while((t+=86400000)<=fim)if(ehUtil(new Date(t).toISOString().slice(0,10)))n++;
+  return n;
+}
+// data que fica n dias úteis antes de iso
+function menosUteis(iso,n){let t=Date.parse(iso+"T12:00:00Z"),c=0;while(c<n){t-=86400000;if(ehUtil(new Date(t).toISOString().slice(0,10)))c++}return new Date(t).toISOString().slice(0,10)}
 function dias(a,b){if(!a||!b)return null;return Math.round((Date.parse(b)-Date.parse(a))/86400000)}
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2400)}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}}
@@ -806,6 +844,7 @@ function ouvirConfig(){
   const ref=db.doc(CFG_DOC);
   unsubCfg=ref.onSnapshot(snap=>{
     cfg=snap.exists?snap.data():null;
+    Object.keys(_fer).forEach(k=>delete _fer[k]);_dupCache=null;_sobCache=null;
     const r=papel(cfg,sess.email);
     if(!snap.exists&&r==="admin"&&!snap.metadata.fromCache)
       ref.set({admins:[],utilizadores:[],consulta:[],nomes:{},alterado:Date.now(),alteradoPorEmail:sess.email}).catch(e=>console.error(e));
@@ -815,7 +854,7 @@ function ouvirConfig(){
     document.body.classList.remove("role-admin","role-utilizador","role-consulta");document.body.classList.add("role-"+r);
     $("#userLbl").innerHTML=`👤 ${esc(sess.nome)}<span class="role">${{admin:"Admin",utilizador:"Utilizador",consulta:"Consulta"}[r]}</span>`;
     if(!col)ligar();else if(mudou)render();
-    renderUsers();
+    renderUsers();renderFeriados();if(col)render();
     if(r==="consulta"&&!$("#reciclagem").classList.contains("hide"))tab("lista");
     if(r!=="admin"&&!$("#utilizadores").classList.contains("hide"))tab("lista");
   },err=>{console.error(err);if(err.code==="permission-denied")semAcesso();else ecraMsg("Erro de ligação",esc(err.message),[["Tentar de novo",()=>location.reload(),true],["Sair",()=>auth.signOut()]])});
@@ -942,14 +981,14 @@ function syncAut(){
   $("#sumAut").textContent=na?`${na} área(s), ${nc} combinação(ões) autorizadas`:"Nenhuma combinação autorizada";
 }
 function calcTempo(){
-  const f=$("#frm"),d=dias(f.dtDRP.value,f.dtDRPM.value);
-  $("#tempo").value=d===null?(f.dtDRP.value?"Na DRP há "+dias(f.dtDRP.value,hoje())+" dias":""):d+(Math.abs(d)===1?" dia":" dias");
-  const nd=d===null&&f.dtDRP.value?dias(f.dtDRP.value,hoje()):null;
-  $("#tempoHint").textContent=d!==null&&d<0?"Atenção: a data DRPM é anterior à data DRP":nd!==null&&nd>limiteDRP()?`⏰ Parado na DRP acima do limite (${limiteDRP()} dias)`:"";
+  const f=$("#frm"),d=du(f.dtDRP.value,f.dtDRPM.value);
+  $("#tempo").value=d===null?(f.dtDRP.value?"Na DRP há "+du(f.dtDRP.value,hoje())+" dias úteis":""):d+(Math.abs(d)===1?" dia útil":" dias úteis");
+  const nd=d===null&&f.dtDRP.value?du(f.dtDRP.value,hoje()):null;
+  $("#tempoHint").textContent=d!==null&&d<0?"Atenção: a data DRPM é anterior à data DRP":nd!==null&&nd>limiteDRP()?`⏰ Parado na DRP acima do limite (${limiteDRP()} dias úteis)`:"";
   const tp=temposDe({dataEntrada:f.dataEntrada.value,dtProc:f.dtProc.value,dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value});
-  $("#tempoProc").value=tp.proc===null?"":`${tp.proc} dias`+(tp.semDrp!==null&&tp.semDrp!==tp.proc?` (${tp.semDrp} sem DRP)`:"");
-  const tt=dias(f.dataEntrada.value,f.dtEnvio.value);
-  $("#tempoTot").value=tt===null?(f.dataEntrada.value&&!f.dtEnvio.value?"Em curso há "+dias(f.dataEntrada.value,hoje())+" dias":""):tt+(Math.abs(tt)===1?" dia":" dias");
+  $("#tempoProc").value=tp.proc===null?"":`${tp.proc} dias úteis`+(tp.semDrp!==null&&tp.semDrp!==tp.proc?` (${tp.semDrp} sem DRP)`:"");
+  const tt=du(f.dataEntrada.value,f.dtEnvio.value);
+  $("#tempoTot").value=tt===null?(f.dataEntrada.value&&!f.dtEnvio.value?"Em curso há "+du(f.dataEntrada.value,hoje())+" dias úteis":""):tt+(Math.abs(tt)===1?" dia útil":" dias úteis");
   const seq=[["dataEntrada","Data Entrada"],["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["dtProc","Dt. processamento"],["dtEmissao","Dt. emissão"],["dtEnvio","Dt. envio ao requerente"]]
     .filter(([k])=>f[k].value),erros=[];
   for(let i=1;i<seq.length;i++)if(f[seq[i][0]].value<f[seq[i-1][0]].value)erros.push(`${seq[i][1]} é anterior a ${seq[i-1][1]}`);
@@ -1067,7 +1106,7 @@ function autoValidade(){const f=$("#frm"),d=f.dtEmissao.value;if(d)f.validade.va
 /* ================= ALERTA: PARADOS NA DRP ================= */
 function limiteDRP(){const v=parseInt(ls("pp_limDRP"),10);return v>0?v:30}
 function setLimiteDRP(v){v=parseInt(v,10);if(v>0){ls("pp_limDRP",String(v));render()}}
-const diasNaDRP=r=>r.dtDRP&&!r.dtDRPM?dias(r.dtDRP,hoje()):null;
+const diasNaDRP=r=>r.dtDRP&&!r.dtDRPM?du(r.dtDRP,hoje()):null;
 const parado=r=>{const d=diasNaDRP(r);return d!==null&&d>limiteDRP()};
 function verParados(){limparFiltros();$('[data-f="sitDRP"]').value="parado";$("#adv").classList.remove("hide");tab("lista");render()}
 // ao escolher uma embarcação já conhecida, completa o conjunto de identificação (e vice-versa)
@@ -1139,6 +1178,24 @@ function mostrarContador(){
   if(document.activeElement!==$("#cntUlt"))$("#cntUlt").value=usado;
   $("#cntInfo").textContent=ano?`Próximo número a atribuir em ${ano}: ${fmtNAut(ano,usado+1)}`:"";
 }
+function renderFeriados(){
+  if(!$("#tbFer"))return;
+  const L=((cfg&&cfg.feriados)||[]).slice().sort((a,b)=>a.d.localeCompare(b.d));
+  const fd=d=>/^\d{2}-\d{2}$/.test(d)?d.split("-").reverse().join("/"):fmt(d);
+  $("#tbFer").innerHTML=L.map(f=>`<tr><td>${fd(f.d)}</td><td>${esc(f.n||"")}</td><td>${/^\d{2}-\d{2}$/.test(f.d)?"Todos os anos":"Só nesse dia"}</td><td><button class="b-sm b-del" onclick="removerFeriado('${f.d}')">Remover</button></td></tr>`).join("")
+    ||'<tr><td colspan="4" class="empty">Nenhum feriado municipal ou tolerância acrescentado.</td></tr>';
+  const a=new Date().getFullYear();
+  $("#ferAno").innerHTML=`<ul>${[...feriadosAno(a).entries()].sort().map(([d,n])=>`<li>${fmt(d)} — ${esc(n)}</li>`).join("")}</ul>`;
+}
+function gravarFeriados(fn){return gravarCfg(c=>{c.feriados=c.feriados||[];fn(c)})}
+function addFeriado(){
+  const t=$("#ferData").value.trim(),n=$("#ferNome").value.trim();let m,d="";
+  if(m=/^(\d{1,2})[\/.-](\d{1,2})$/.exec(t))d=`${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  else if(m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/.exec(t))d=`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  if(!d){alert("Indique a data como dd/mm (todos os anos) ou dd/mm/aaaa (só nesse dia).");return}
+  gravarFeriados(c=>{c.feriados=c.feriados.filter(f=>f.d!==d);c.feriados.push({d,n})}).then(()=>{$("#ferData").value="";$("#ferNome").value="";toast("Feriado acrescentado — os prazos foram recalculados")}).catch(()=>{});
+}
+function removerFeriado(d){if(!confirm("Remover este feriado?"))return;gravarFeriados(c=>{c.feriados=c.feriados.filter(f=>f.d!==d)}).then(()=>toast("Feriado removido")).catch(()=>{})}
 async function gravarContador(){
   const ano=+$("#cntAno").value,ult=+$("#cntUlt").value,mx=maxNAut(ano);
   if(!ano||ult<0){alert("Indique o ano e o último número.");return}
@@ -1291,7 +1348,7 @@ function zoomBtn(f){const v=$("#mapView");zoomAt(f,v.clientWidth/2,v.clientHeigh
 function fechar(){$("#modal").classList.remove("open");libertarPresenca();editId=null}
 
 /* ================= QUEM ESTÁ A EDITAR ================= */
-const PRES_COL="rampap_presenca",PRES_HB=30000,PRES_VAL=90000;
+const PRES_COL="rampap_presenca",PRES_HB=300000,PRES_VAL=660000;
 let presenca=[],unsubPres=null,presTimer=null,presId=null;
 const presDocId=pid=>pid+"__"+chaveU(sess.email);
 function ouvirPresenca(){
@@ -1454,7 +1511,7 @@ function filtrar(F){
     if(F.sitDRP==="assin"&&!(dtAss(r)&&!r.dtEnvio))return false;
     if(F.sitDRP==="env"&&!r.dtEnvio)return false;
     if(F.val&&estadoValidade(r)!==F.val)return false;
-    if(F.tMin!==""||F.tMax!==""){const t=dias(r.dtDRP,r.dtDRPM);if(t===null)return false;if(F.tMin!==""&&t<+F.tMin)return false;if(F.tMax!==""&&t>+F.tMax)return false}
+    if(F.tMin!==""||F.tMax!==""){const t=du(r.dtDRP,r.dtDRPM);if(t===null)return false;if(F.tMin!==""&&t<+F.tMin)return false;if(F.tMax!==""&&t>+F.tMax)return false}
     if(F.dDe||F.dAte){const d=r[F.dCampo];if(!d)return false;if(F.dDe&&d<F.dDe)return false;if(F.dAte&&d>F.dAte)return false}
     if(F.dup&&!dupSet().has(r.id))return false;
     if(F.fase!==""&&F.fase!=null&&faseDe(r)!==+F.fase)return false;
@@ -1492,7 +1549,7 @@ function aplicarFiltro(tipo,valor){
   else if(tipo==="mes"){const [a,m]=valor.split("-");sel("dCampo").value="dataEntrada";sel("dDe").value=`${a}-${m}-01`;
     sel("dAte").value=`${a}-${m}-${String(new Date(+a,+m,0).getDate()).padStart(2,"0")}`}
   else if(tipo==="pendIdade"){const [a,b]=valor;sel("decisao").value="Pendente";sel("dCampo").value="dataEntrada";
-    const d=n=>{const x=new Date(hoje());x.setDate(x.getDate()-n);return x.toISOString().slice(0,10)};
+    const d=n=>menosUteis(hoje(),n);
     sel("dAte").value=d(a);if(b<1e8)sel("dDe").value=d(b)}
   else if(tipo==="fase")sel("fase").value=String(valor);
   else if(tipo==="qual")sel("qual").value=valor;
@@ -1522,7 +1579,7 @@ function render(){
 
   let lst=filtrar(F);
   lst.sort((a,b)=>{
-    const k=ordem.k;let x=k==="tempo"?dias(a.dtDRP,a.dtDRPM):a[k],y=k==="tempo"?dias(b.dtDRP,b.dtDRPM):b[k];
+    const k=ordem.k;let x=k==="tempo"?du(a.dtDRP,a.dtDRPM):a[k],y=k==="tempo"?du(b.dtDRP,b.dtDRPM):b[k];
     x=x??"";y=y??"";return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"pt",{numeric:true}))*ordem.dir;
   });
   $$("th[data-k]").forEach(th=>{th.classList.toggle("sorted",th.dataset.k===ordem.k);th.dataset.arrow=ordem.dir>0?"▲":"▼"});
@@ -1530,7 +1587,7 @@ function render(){
   const tag=d=>d==="Autorizado"?'<span class="tag t-ok">✔ Autorizado</span>':d==="Indeferido"?'<span class="tag t-bad">✖ Indeferido</span>':d==="Concluído"?'<span class="tag t-neu">■ Concluído</span>':'<span class="tag t-pend">Pendente</span>';
   const valTag=r=>{if(!r.validade)return"";const e=estadoValidade(r);
     return fmt(r.validade)+(e==="expirado"?' <span class="tag t-bad">Expirado</span>':e==="expira"?' <span class="tag t-pend">A expirar</span>':"")};
-  const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
+  const tempoTxt=r=>{const t=du(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d.ú.";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${du(r.dtDRP,hoje())} d.ú.)</span>`;return""};
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
     <td>${(e=>e.length?`<span class="presmark" title="Em edição por ${esc(e.map(x=>x.n||x.e).join(", "))}">✎</span>`:"")(editoresDe(r.id))}${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}${r.periodoIni||r.periodoFim?`<div class="small">📅 ${fmt(r.periodoIni)||"…"} a ${fmt(r.periodoFim)||"…"}</div>`:""}</td>
@@ -1541,8 +1598,8 @@ function render(){
   const par=dados.filter(parado),lim=limiteDRP(),al=$("#alertaDRP");
   if(par.length&&!al.contains(document.activeElement)){
     const max=Math.max(...par.map(diasNaDRP));
-    al.innerHTML=`<b>⏰ ${par.length} pedido${par.length>1?"s":""} parado${par.length>1?"s":""} na DRP há mais de ${lim} dias (o mais antigo há ${max} dias)</b>
-      <label class="small">Limite: <input type="number" min="1" value="${lim}" onchange="setLimiteDRP(this.value)"> dias</label>
+    al.innerHTML=`<b>⏰ ${par.length} pedido${par.length>1?"s":""} parado${par.length>1?"s":""} na DRP há mais de ${lim} dias úteis (o mais antigo há ${max} dias úteis)</b>
+      <label class="small">Limite: <input type="number" min="1" value="${lim}" onchange="setLimiteDRP(this.value)"> dias úteis</label>
       <button class="b-sm" onclick="verParados()">Ver pedidos</button>`;
     al.classList.remove("hide");
   }else if(!par.length)al.classList.add("hide");
@@ -1565,11 +1622,11 @@ function dtEmiCel(r){
 /* ---- tempos de tramitação ---- */
 function temposDe(r){
   const ok=x=>x!==null&&x>=0?x:null;
-  const proc=ok(dias(r.dataEntrada,r.dtProc)),env=ok(dias(r.dataEntrada,r.dtEnvio));
+  const proc=ok(du(r.dataEntrada,r.dtProc)),env=ok(du(r.dataEntrada,r.dtEnvio));
   let semDrp=null;
   if(proc!==null){
     if(!r.dtDRP)semDrp=proc;                       // nunca foi à DRP
-    else if(r.dtDRPM){const d=ok(dias(r.dtDRP,r.dtDRPM));if(d!==null)semDrp=ok(proc-d)}
+    else if(r.dtDRPM){const d=ok(du(r.dtDRP,r.dtDRPM));if(d!==null)semDrp=ok(proc-d)}
   }
   return {proc,semDrp,env};
 }
@@ -1584,9 +1641,9 @@ function temposHTML(lst){
   const T=lst.map(temposDe),f=x=>x==null?"—":(Math.round(x*10)/10).toLocaleString("pt-PT");
   const linhas=IND_T.map(([k,l,c])=>{const e=estat(T.map(t=>t[k]));return `<tr><td><span class="sw" style="background:${css(c)}"></span>${l}</td>
     <td class="n">${e.n}</td><td class="n">${f(e.media)}</td><td class="n">${f(e.med)}</td><td class="n">${e.n?e.min:"—"}</td><td class="n">${e.n?e.max:"—"}</td><td class="n">${e.n?Math.round(e.ate30*100)+"%":"—"}</td></tr>`}).join("");
-  return `<h3>⏱ Tempos de tramitação (dias)</h3>
-   <div style="overflow-x:auto"><table class="ttab"><thead><tr><th>Indicador</th><th class="n">Pedidos</th><th class="n">Média</th><th class="n">Mediana</th><th class="n">Mín.</th><th class="n">Máx.</th><th class="n">≤ 30 dias</th></tr></thead><tbody>${linhas}</tbody></table></div>
-   <p class="small" style="margin:8px 0 0">Só entram os pedidos com as duas datas preenchidas. <b>Sem o tempo na DRP</b>: desconta os dias entre o envio à DRP e o envio à DRPM (pedidos que estão na DRP sem data de regresso ficam de fora; pedidos que não foram à DRP contam o tempo completo).</p>`;
+  return `<h3>⏱ Tempos de tramitação (dias úteis)</h3>
+   <div style="overflow-x:auto"><table class="ttab"><thead><tr><th>Indicador</th><th class="n">Pedidos</th><th class="n">Média</th><th class="n">Mediana</th><th class="n">Mín.</th><th class="n">Máx.</th><th class="n">≤ 30 dias úteis</th></tr></thead><tbody>${linhas}</tbody></table></div>
+   <p class="small" style="margin:8px 0 0">Contagem em <b>dias úteis</b> (sem fins de semana, feriados nacionais, Dia dos Açores e feriados/tolerâncias definidos pelo administrador). Só entram os pedidos com as duas datas preenchidas. <b>Sem o tempo na DRP</b>: desconta os dias entre o envio à DRP e o envio à DRPM (pedidos que estão na DRP sem data de regresso ficam de fora; pedidos que não foram à DRP contam o tempo completo).</p>`;
 }
 /* ================= ESTATÍSTICAS ================= */
 const FASES=["Registado — por enviar à DRP","Na DRP","Em análise (após DRP)","Enviado para assinatura","Assinado, por enviar","Enviado ao requerente"];
@@ -1684,8 +1741,8 @@ function anosHTML(lst){
 function statsHTML(lst){
   const ds=dupSet(),nd=lst.filter(r=>ds.has(r.id)).length;
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
-  const tempos=lst.map(r=>dias(r.dtDRP,r.dtDRPM)).filter(x=>x!==null&&x>=0);
-  const media=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length)+" d":"—";
+  const tempos=lst.map(r=>du(r.dtDRP,r.dtDRPM)).filter(x=>x!==null&&x>=0);
+  const media=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length)+" d.ú.":"—";
   const naDRP=lst.filter(r=>r.dtDRP&&!r.dtDRPM).length;
   const dec=n("Autorizado")+n("Indeferido"),taxa=dec?Math.round(n("Autorizado")/dec*100)+"%":"—";
   return `<div class="stat"><b>${lst.length}</b><span>Pedidos</span></div>
@@ -1707,7 +1764,7 @@ function tab(t){
   $("#pesquisa").classList.toggle("hide",t==="reciclagem"||t==="utilizadores");
   if(t==="graficos")renderCharts();
   if(t==="reciclagem")renderLixo();
-  if(t==="utilizadores"){renderUsers();mostrarContador()}
+  if(t==="utilizadores"){renderUsers();mostrarContador();renderFeriados()}
 }
 
 /* ================= GRÁFICOS ================= */
@@ -1763,24 +1820,24 @@ function renderCharts(){
   if(quer("tempos")){
     const nomes=["Até processamento","Até processamento (sem DRP)","Até envio ao requerente"];
     S("tempos",[`<div class="gblk">${temposHTML(lst)}</div>`],[
-      {id:"c8",tit:`Tempos médios por ${per} de entrada`,sub:"Dias",labels:P.labels,unit:" d",
+      {id:"c8",tit:`Tempos médios por ${per} de entrada`,sub:"Dias úteis",labels:P.labels,unit:" d",
         ds:IND_T.map(([k],j)=>({label:nomes[j],color:[S1,S2,S3][j],data:P.keys.map(pk=>{const e=estat(lst.filter(r=>(r.dataEntrada||"").startsWith(pk)).map(r=>temposDe(r)[k]));return e.n?Math.round(e.media):null})})),click:i=>aplicarFiltro(P.modo,P.keys[i])},
-      {id:"c9",tit:"Distribuição dos tempos",sub:"N.º de pedidos por intervalo de dias",labels:FAIXAS.map(x=>x[0]),
+      {id:"c9",tit:"Distribuição dos tempos",sub:"N.º de pedidos por intervalo de dias úteis",labels:FAIXAS.map(x=>x[0]),
         ds:IND_T.map(([k],j)=>({label:nomes[j],color:[S1,S2,S3][j],data:FAIXAS.map(([,a,b])=>lst.map(r=>temposDe(r)[k]).filter(x=>x!==null&&x>=a&&x<=b).length)}))}]);
   }
   /* ---- PROCESSO E PENDÊNCIAS ---- */
   if(quer("processo")){
     const pend=lst.filter(r=>(r.decisao||"Pendente")==="Pendente");
     const IDADE=[["≤ 30 dias",0,30],["31–60",31,60],["61–90",61,90],["91–180",91,180],["> 180",181,1e9]];
-    const idades=pend.map(r=>r.dataEntrada?dias(r.dataEntrada,HOJE):null);
+    const idades=pend.map(r=>r.dataEntrada?du(r.dataEntrada,HOJE):null);
     const fases=FASES.map((_,i)=>lst.filter(r=>faseDe(r)===i).length);
     const E=eixoMeses([...lst.map(r=>r.dataEntrada),...lst.map(dtAss),...lst.map(r=>r.dtEnvio)]);
     const conta=(fn)=>E.keys.map(k=>lst.filter(r=>(fn(r)||"").startsWith(k)).length);
     const ent=conta(r=>r.dataEntrada),ass=conta(dtAss),env=conta(r=>r.dtEnvio);
     const saldo=ent.reduce((s,x)=>s+x,0)-env.reduce((s,x)=>s+x,0);
-    S("processo",[`<div class="gblk"><h3>Pendências</h3>${tiles([[pend.length,"Pendentes","--warn"],[idades.filter(x=>x!==null&&x>90).length,"Pendentes há mais de 90 dias","--bad"],
-      [fmtN(media(idades)),"Antiguidade média (dias)"],[Math.max(0,...idades.filter(x=>x!==null)),"Pendente mais antigo (dias)"],[saldo,"Entradas − enviados (no período)"]])}</div>`],[
-      {id:"c10",tit:"Pendentes por antiguidade",sub:"Dias desde a Data Entrada",labels:IDADE.map(x=>x[0]),ds:[{label:"Pendentes",data:IDADE.map(([,a,b])=>idades.filter(x=>x!==null&&x>=a&&x<=b).length),color:S1}],click:i=>aplicarFiltro("pendIdade",[IDADE[i][1],IDADE[i][2]])},
+    S("processo",[`<div class="gblk"><h3>Pendências</h3>${tiles([[pend.length,"Pendentes","--warn"],[idades.filter(x=>x!==null&&x>90).length,"Pendentes há mais de 90 dias úteis","--bad"],
+      [fmtN(media(idades)),"Antiguidade média (dias úteis)"],[Math.max(0,...idades.filter(x=>x!==null)),"Pendente mais antigo (dias úteis)"],[saldo,"Entradas − enviados (no período)"]])}</div>`],[
+      {id:"c10",tit:"Pendentes por antiguidade",sub:"Dias úteis desde a Data Entrada",labels:IDADE.map(x=>x[0]),ds:[{label:"Pendentes",data:IDADE.map(([,a,b])=>idades.filter(x=>x!==null&&x>=a&&x<=b).length),color:S1}],click:i=>aplicarFiltro("pendIdade",[IDADE[i][1],IDADE[i][2]])},
       {id:"c11",tit:"Fase atual dos pedidos",sub:"N.º de pedidos",horiz:true,labels:FASES,ds:[{label:"Pedidos",data:fases,color:S1}],click:i=>aplicarFiltro("fase",i)},
       {id:"c12",tit:`Entradas e saídas por ${E.modo==="mes"?"mês":"ano"}`,sub:"N.º de pedidos",labels:E.labels,
         ds:[{label:"Entrados",data:ent,color:S1},{label:"Assinados",data:ass,color:S2},{label:"Enviados ao requerente",data:env,color:S3}]}]);
@@ -1788,18 +1845,18 @@ function renderCharts(){
   /* ---- DRP ---- */
   if(quer("drp")){
     const drp=lst.filter(r=>r.dtDRP),E=eixoMeses(drp.map(r=>r.dtDRP));
-    const tDrp=r=>r.dtDRPM?dias(r.dtDRP,r.dtDRPM):dias(r.dtDRP,HOJE);
-    const conc=drp.filter(r=>r.dtDRPM&&dias(r.dtDRP,r.dtDRPM)>=0);
+    const tDrp=r=>r.dtDRPM?du(r.dtDRP,r.dtDRPM):du(r.dtDRP,HOJE);
+    const conc=drp.filter(r=>r.dtDRPM&&du(r.dtDRP,r.dtDRPM)>=0);
     const acima=drp.filter(r=>tDrp(r)>LIM).length;
-    const peso=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?dias(r.dtDRP,r.dtDRPM):null;return t.env&&d!==null&&d>=0?d/t.env*100:null}));
-    const pesoP=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?dias(r.dtDRP,r.dtDRPM):null;return t.proc&&d!==null&&d>=0?d/t.proc*100:null}));
+    const peso=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?du(r.dtDRP,r.dtDRPM):null;return t.env&&d!==null&&d>=0?d/t.env*100:null}));
+    const pesoP=media(lst.map(r=>{const t=temposDe(r),d=r.dtDRP&&r.dtDRPM?du(r.dtDRP,r.dtDRPM):null;return t.proc&&d!==null&&d>=0?d/t.proc*100:null}));
     S("drp",[`<div class="gblk"><h3>DRP</h3>${tiles([[drp.length,"Pedidos enviados à DRP"],[drp.filter(r=>!r.dtDRPM).length,"Atualmente na DRP","--warn"],
-      [fmtN(media(conc.map(r=>dias(r.dtDRP,r.dtDRPM)))),"Tempo médio na DRP (dias)"],[`${acima} (${pct(acima,drp.length)??0}%)`,`Acima do limite de ${LIM} dias`,"--bad"],
+      [fmtN(media(conc.map(r=>du(r.dtDRP,r.dtDRPM)))),"Tempo médio na DRP (dias úteis)"],[`${acima} (${pct(acima,drp.length)??0}%)`,`Acima do limite de ${LIM} dias úteis`,"--bad"],
       [peso==null?"—":Math.round(peso)+"%","Peso da DRP no tempo até envio"],[pesoP==null?"—":Math.round(pesoP)+"%","Peso da DRP no tempo até processamento"]])}
       <p class="small" style="margin:8px 0 0">O peso é a parte do tempo de cada pedido passada na DRP (média dos pedidos com as datas necessárias). O limite de dias altera-se no aviso da lista de pedidos.</p></div>`],[
-      {id:"c13",tit:`Tempo médio na DRP por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,sub:"Dias (pedidos já devolvidos)",labels:E.labels,unit:" d",
-        ds:[{label:"Tempo médio",data:E.keys.map(k=>{const v=conc.filter(r=>r.dtDRP.startsWith(k)).map(r=>dias(r.dtDRP,r.dtDRPM));return v.length?Math.round(media(v)):null}),color:S1}]},
-      {id:"c14",tit:`Pedidos acima do limite na DRP (${LIM} dias)`,sub:`% por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,labels:E.labels,unit:"%",max:100,
+      {id:"c13",tit:`Tempo médio na DRP por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,sub:"Dias úteis (pedidos já devolvidos)",labels:E.labels,unit:" d",
+        ds:[{label:"Tempo médio",data:E.keys.map(k=>{const v=conc.filter(r=>r.dtDRP.startsWith(k)).map(r=>du(r.dtDRP,r.dtDRPM));return v.length?Math.round(media(v)):null}),color:S1}]},
+      {id:"c14",tit:`Pedidos acima do limite na DRP (${LIM} dias úteis)`,sub:`% por ${E.modo==="mes"?"mês":"ano"} de envio à DRP`,labels:E.labels,unit:"%",max:100,
         ds:[{label:"% acima do limite",data:E.keys.map(k=>{const v=drp.filter(r=>r.dtDRP.startsWith(k));return v.length?pct(v.filter(r=>tDrp(r)>LIM).length,v.length):null}),color:S2}]}]);
   }
   /* ---- DECISÕES ---- */
@@ -1852,7 +1909,7 @@ function renderCharts(){
     S("validade",[`<div class="gblk"><h3>Autorizações</h3>${tiles([[vig.length,"Em vigor hoje","--ok"],[exp(30),"Expiram em 30 dias","--bad"],[exp(60),"Expiram em 60 dias","--warn"],[exp(90),"Expiram em 90 dias"],[expAno,`Expiradas em ${HOJE.slice(0,4)}`]])}</div>`,
       `<div class="gblk"><h3>Adendas</h3>${tiles([[ads.length,"Adendas"],[adA.length,"Autorizadas","--ok"],[ads.filter(r=>r.decisao==="Indeferido").length,"Indeferidas","--bad"],[ads.filter(r=>r.decisao==="Concluído").length,"Concluídas","--neu"],[ads.filter(r=>(r.decisao||"Pendente")==="Pendente").length,"Pendentes","--warn"]])}
        <h3 style="margin-top:12px">O que mudaram (adendas autorizadas)</h3>${tiles([[mA,"Áreas/artes"],[mV,"Validade"],[mE,"Embarcação ou titular"]])}
-       <h3 style="margin-top:12px">Tramitação das adendas (dias)</h3>${tiles([[fmtN(media(Ta.map(t=>t.proc))),"Média até processamento"],[fmtN(media(Ta.map(t=>t.semDrp))),"Média sem DRP"],[fmtN(media(Ta.map(t=>t.env))),"Média até envio"]])}</div>`],[
+       <h3 style="margin-top:12px">Tramitação das adendas (dias úteis)</h3>${tiles([[fmtN(media(Ta.map(t=>t.proc))),"Média até processamento"],[fmtN(media(Ta.map(t=>t.semDrp))),"Média sem DRP"],[fmtN(media(Ta.map(t=>t.env))),"Média até envio"]])}</div>`],[
       {id:"c17",tit:"Autorizações que expiram nos próximos 12 meses",sub:"N.º de autorizações em vigor por mês de fim da validade",labels:meses.map(x=>x[1]),ds:[{label:"Expiram",data:meses.map(([k])=>vig.filter(r=>fimDe(r).startsWith(k)).length),color:S2}]}]);
   }
   /* ---- QUALIDADE ---- */
@@ -1886,7 +1943,7 @@ function renderCharts(){
     const semEt=lst.filter(r=>!r.etapas).length;
     const selPer=`<div class="chips-inline noprint"><label class="small">Atividade: <select onchange="desPer=this.value;renderCharts()">${[["","Todo o período"],["30","Últimos 30 dias"],["mes","Este mês"],["ano","Este ano"]].map(([v,l])=>`<option value="${v}" ${v===per?"selected":""}>${l}</option>`).join("")}</select></label>
       <span class="small">Conta as etapas feitas por cada utilizador nos pedidos selecionados.</span></div>`;
-    S("utilizadores",[`<div class="gblk"><h3>Desempenho por utilizador</h3>${selPer}<div class="gwrap"><table class="gtab"><thead><tr><th>Utilizador</th>${ETAPAS.map(x=>`<th class="n">${x[1]}</th>`).join("")}<th class="n">Autoriz. / Indef.</th><th class="n">Edições</th><th class="n">Média entrada→proc. (dias)</th><th>Última atividade</th></tr></thead><tbody>${
+    S("utilizadores",[`<div class="gblk"><h3>Desempenho por utilizador</h3>${selPer}<div class="gwrap"><table class="gtab"><thead><tr><th>Utilizador</th>${ETAPAS.map(x=>`<th class="n">${x[1]}</th>`).join("")}<th class="n">Autoriz. / Indef.</th><th class="n">Edições</th><th class="n">Média entrada→proc. (dias úteis)</th><th>Última atividade</th></tr></thead><tbody>${
       L.map(x=>`<tr><td><b>${esc(x.n)}</b>${x.e&&x.e!==x.n?`<br><span class="small">${esc(x.e)}</span>`:""}</td>${ETAPAS.map(([k])=>`<td class="n">${x.et[k]||'<span class="small">0</span>'}${k==="registo"&&(x.pdf||x.excel)?`<br><span class="small">${x.pdf?x.pdf+" PDF":""}${x.pdf&&x.excel?" · ":""}${x.excel?x.excel+" Excel":""}</span>`:""}</td>`).join("")}
         <td class="n">${x.aut} / ${x.ind}</td><td class="n">${x.ed}</td><td class="n">${fmtN(media(x.tProc))}</td><td class="small">${x.ult?new Date(x.ult).toLocaleString("pt-PT"):"—"}</td></tr>`).join("")
       ||'<tr><td colspan="12" class="empty">Sem atividade registada no período.</td></tr>'}</tbody></table></div>
@@ -1947,12 +2004,12 @@ function imprimirHTML(h,landscape){
 const logoSrc=()=>$("header .logo").src;
 function descreverFiltros(F){
   const d=[],L={periodoIni:"Período pedido (início)",periodoFim:"Período pedido (fim)",dtProc:"Dt. processamento",dtEnvio:"Dt. envio ao requerente",dataEntrada:"Data Entrada",dtDRP:"Dt. envio DRP",dtDRPM:"Dt. envio DRPM",dtEmissao:"Dt. Emissão",validade:"Validade"};
-  const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias`,concl:"já enviado à DRPM",proc:"enviado para assinatura",assin:"assinado, por enviar",env:"enviado ao requerente"};
+  const sit={nao:"não enviado à DRP",na:"na DRP",parado:`parado na DRP > ${limiteDRP()} dias úteis`,concl:"já enviado à DRPM",proc:"enviado para assinatura",assin:"assinado, por enviar",env:"enviado ao requerente"};
   const val={valido:"válidos",expira:"a expirar",expirado:"expirados"};
   if(F.q)d.push(`texto “${F.q}”`);
   [["distribuicao","Distribuição"],["nPedido","N.º Pedido"],["nAut","N.º Autorização"],["titular","Titular"],["embarcacao","Embarcação"],["cjId","Conj. Identificação"],["pais","País"],["decisao","Decisão"],["por","Utilizador"]].forEach(([k,l])=>{if(F[k])d.push(`${l}: ${F[k]}`)});
   if(F.sitDRP)d.push("Situação: "+sit[F.sitDRP]);if(F.val)d.push("Validade: "+val[F.val]);
-  if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias`);
+  if(F.tMin||F.tMax)d.push(`Tempo DRP: ${F.tMin||0}–${F.tMax||"∞"} dias úteis`);
   if(F.dDe||F.dAte)d.push(`${L[F.dCampo]}: ${F.dDe?fmt(F.dDe):"…"} a ${F.dAte?fmt(F.dAte):"…"}`);
   if(F.dup)d.push("só possíveis duplicados");
   if(F.fase!==""&&F.fase!=null)d.push("Fase: "+FASES[+F.fase]);
@@ -1967,14 +2024,14 @@ function cabecalhoPrint(titulo,sub){
   return `<h1><img src="${logoSrc()}" alt="">${titulo}</h1><p class="sub">${sub}<br>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>`;
 }
 function ordenados(lst){
-  return [...lst].sort((a,b)=>{const k=ordem.k;let x=k==="tempo"?dias(a.dtDRP,a.dtDRPM):a[k],y=k==="tempo"?dias(b.dtDRP,b.dtDRPM):b[k];x=x??"";y=y??"";
+  return [...lst].sort((a,b)=>{const k=ordem.k;let x=k==="tempo"?du(a.dtDRP,a.dtDRPM):a[k],y=k==="tempo"?du(b.dtDRP,b.dtDRPM):b[k];x=x??"";y=y??"";
     return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"pt",{numeric:true}))*ordem.dir});
 }
 function imprimirListagem(){
   const F=getFiltros(),lst=ordenados(filtrar(F));
   if(!lst.length){toast("Não há pedidos para imprimir");return}
   const j=a=>esc((a||[]).join(", "));
-  const linhas=lst.map(r=>{const t=dias(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
+  const linhas=lst.map(r=>{const t=du(r.dtDRP,r.dtDRPM);return `<tr><td>${esc(r.distribuicao)}</td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${esc(txtMap(mapa(r,"sol")))}</td><td>${esc(docsTxt(r)||r.documentos||"")}</td><td>${fmt(r.dtDRP)}</td><td>${fmt(r.dtDRPM)}</td>
     <td>${t===null?(r.dtDRP?"na DRP":""):t}</td><td>${esc(r.decisao||"Pendente")}${r.decisao==="Autorizado"&&r.nAut?"<br>N.º "+esc(r.nAut):""}</td><td>${esc(txtMap(mapa(r,"aut")))}</td><td>${fmt(dtAss(r))}</td><td>${fmt(r.dtEnvio)}</td><td>${r.decisao==="Autorizado"?fmt(r.validade):""}</td></tr>`}).join("");
   const n=s=>lst.filter(r=>(r.decisao||"Pendente")===s).length;
@@ -2042,7 +2099,7 @@ function imprimirOficio(){
 }
 
 function imprimir(){
-  const r=dados.find(x=>x.id===editId);if(!r)return;const t=dias(r.dtDRP,r.dtDRPM);
+  const r=dados.find(x=>x.id===editId);if(!r)return;const t=du(r.dtDRP,r.dtDRPM);
   const row=(a,b)=>`<tr><th>${a}</th><td>${b||"—"}</td></tr>`,nl=s=>esc(s).replace(/\n/g,"<br>");
   $("#printArea").innerHTML=`<div class="pf">
    <h1><img src="${$('header .logo').src}" alt="">Rampa-P — ${esc(r.distribuicao)}</h1><p>Impresso em ${new Date().toLocaleString("pt-PT")} por ${esc(sess.nome)}</p>
@@ -2050,7 +2107,7 @@ function imprimir(){
     ${row("Nome do Titular",esc(r.titular))}${r.tipoReq?row("Tipologia",esc(r.tipoReq)):""}${row("NIF / NIPC",esc(r.nif))}${row("Morada",esc(r.morada))}${row("Email",esc(r.email))}${row("Telefone",esc(r.telefone))}${r.representante?row("Representante",esc(r.representante)):""}${row("Embarcação",esc(r.embarcacao))}${row("Conjunto Identificação",esc(r.cjId))}${row("País",esc(r.pais))}</table>
    <h3>Pedido</h3><table>${row("Áreas e artes solicitadas",esc(txtMap(mapa(r,"sol"),"\n",nomeArte)).replace(/\n/g,"<br>"))}${row("Período pedido",r.periodoIni||r.periodoFim?`${fmt(r.periodoIni)||"…"} a ${fmt(r.periodoFim)||"…"}`:"")}</table>
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
-    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${(t=>(t.proc!==null?row("Até processamento",t.proc+" dias"+(t.semDrp!==null&&t.semDrp!==t.proc?` (${t.semDrp} sem o tempo na DRP)`:"")):"")+(t.env!==null?row("Tempo total do processo",t.env+" dias"):""))(temposDe(r))}</table>
+    ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias úteis")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${(t=>(t.proc!==null?row("Até processamento",t.proc+" dias úteis"+(t.semDrp!==null&&t.semDrp!==t.proc?` (${t.semDrp} sem o tempo na DRP)`:"")):"")+(t.env!==null?row("Tempo total do processo",t.env+" dias úteis"):""))(temposDe(r))}</table>
    <h3>Decisão</h3><table>${ehAdenda(r)?row("Tipo de pedido","Adenda à autorização n.º "+esc(r.adendaDe)):""}${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
     ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}${r.decisao==="Concluído"?row("Justificação da conclusão",nl(r.justConcl)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
@@ -2069,8 +2126,8 @@ function carregarXLSX(){
 const COLS_X=[ // ordem das colunas no Excel exportado / modelo
  ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["tipoReq","Tipologia do Requerente"],["nif","NIF"],["morada","Morada"],["email","Email"],["telefone","Telefone"],["representante","Representante"],["embarcacao","Embarcação"],
  ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["periodoIni","Período Pedido Início"],["periodoFim","Período Pedido Fim"],["pareceres","Pareceres"],
- ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["tipoPedido","Tipo de Pedido"],["adendaDe","Adenda à Autorização"],["nAut","N.º Autorização"],
- ["justificacao","Justificação Indeferimento"],["justConcl","Justificação Conclusão"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["tProc","Dias até Processamento"],["tSemDrp","Dias até Processamento sem DRP"],["tEnv","Dias até Envio"],["validade","Validade"],
+ ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias úteis)"],["decisao","Decisão"],["tipoPedido","Tipo de Pedido"],["adendaDe","Adenda à Autorização"],["nAut","N.º Autorização"],
+ ["justificacao","Justificação Indeferimento"],["justConcl","Justificação Conclusão"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["tProc","Dias Úteis até Processamento"],["tSemDrp","Dias Úteis até Processamento sem DRP"],["tEnv","Dias Úteis até Envio"],["validade","Validade"],
  ["observacoes","Observações"],["criadoPor","Registado por"],["alteradoPor","Última alteração por"]];
 const nrm=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const SINON={
@@ -2111,7 +2168,7 @@ const SINON={
  dtEmissao:["dt emissao","data emissao","emissao","data de emissao"],
  validade:["validade","data validade","valido ate"],
  observacoes:["observacoes","obs","observacao"]};
-const IGNORAR_COL=["dias ate processamento","dias ate processamento sem drp","dias ate envio","tempo exec drp dias","tempo exec drp","registado por","ultima alteracao por"];
+const IGNORAR_COL=["dias uteis ate processamento","dias uteis ate processamento sem drp","dias uteis ate envio","tempo exec drp dias uteis","dias ate processamento","dias ate processamento sem drp","dias ate envio","tempo exec drp dias","tempo exec drp","registado por","ultima alteracao por"];
 function dataX(v){
   if(v===""||v==null)return {v:""};
   if(typeof v==="number"&&v>20000&&v<80000)return {v:new Date(Math.round((v-25569)*86400000)).toISOString().slice(0,10)};
@@ -2284,7 +2341,7 @@ async function confirmarImp(){
 }
 
 function linhaExcel(r){
-  const t=dias(r.dtDRP,r.dtDRPM);
+  const t=du(r.dtDRP,r.dtDRPM);
   return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,tipoReq:r.tipoReq||"",nif:r.nif||"",morada:r.morada||"",email:r.email||"",telefone:r.telefone||"",representante:r.representante||"",embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
     documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),periodoIni:fmt(r.periodoIni),periodoFim:fmt(r.periodoFim),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
     tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",justConcl:r.justConcl||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),...(t=>({tProc:t.proc??"",tSemDrp:t.semDrp??"",tEnv:t.env??""}))(temposDe(r)),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
@@ -2462,10 +2519,10 @@ async function importarPdf(f){
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Período Pedido Início","Período Pedido Fim","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Justificação Conclusão","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Período Pedido Início","Período Pedido Fim","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias úteis)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Justificação Conclusão","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),fmt(r.periodoIni),fmt(r.periodoFim),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,r.justConcl,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),du(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,r.justConcl,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     fmt(r.dtProc),fmt(dtAss(r)),fmt(r.dtEnvio),r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
