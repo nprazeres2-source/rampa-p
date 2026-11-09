@@ -13,9 +13,9 @@
 <style>
 :root{--bg:#f3f6f9;--card:#fff;--ink:#1c2733;--muted:#5d6b7a;--line:#dbe3ea;--pri:#0b5c8a;--pri2:#e6f1f8;
  --ok:#1d7a45;--okbg:#e5f5ec;--bad:#b42318;--badbg:#fdecea;--warn:#a15c00;--warnbg:#fff4e0;
- --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--st-good:#0ca30c;--st-bad:#d03b3b;--st-warn:#fab219;--grid:#e8edf2;}
+ --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--st-good:#0ca30c;--st-bad:#d03b3b;--st-warn:#fab219;--neu:#5d6b7a;--neubg:#e9edf1;--grid:#e8edf2;}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#17222d;--ink:#e6edf3;--muted:#9fb0c1;--line:#2a3846;--pri:#4ba3d9;--pri2:#1b3346;
- --ok:#5cc98a;--okbg:#173327;--bad:#f2867c;--badbg:#3a1c1a;--warn:#f0b35a;--warnbg:#3a2c14;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#24313d;}}
+ --ok:#5cc98a;--okbg:#173327;--bad:#f2867c;--badbg:#3a1c1a;--warn:#f0b35a;--warnbg:#3a2c14;--neu:#a3b0bd;--neubg:#26313c;--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--grid:#24313d;}}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
 header{background:#0b5c8a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -58,7 +58,7 @@ th.sorted::after{content:attr(data-arrow);margin-left:4px}
 #tb tr{cursor:pointer}
 #tb tr:hover{background:var(--pri2)}
 .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
-.t-ok{background:var(--okbg);color:var(--ok)}.t-bad{background:var(--badbg);color:var(--bad)}.t-pend{background:var(--warnbg);color:var(--warn)}
+.t-ok{background:var(--okbg);color:var(--ok)}.t-bad{background:var(--badbg);color:var(--bad)}.t-pend{background:var(--warnbg);color:var(--warn)}.t-neu{background:var(--neubg);color:var(--neu)}
 .small{color:var(--muted);font-size:12px}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
@@ -77,6 +77,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mu
 .dec span{display:block;text-align:center;padding:10px;border:2px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600}
 .dec input:checked+span.d-ok{border-color:var(--ok);background:var(--okbg);color:var(--ok)}
 .dec input:checked+span.d-bad{border-color:var(--bad);background:var(--badbg);color:var(--bad)}
+.dec input:checked+span.d-neu{border-color:var(--neu);background:var(--neubg);color:var(--neu)}
 .dec input:checked+span.d-pend{border-color:var(--warn);background:var(--warnbg);color:var(--warn)}
 .hide{display:none!important}
 .hint{font-size:12px;color:var(--warn);font-weight:500}
@@ -353,7 +354,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
         <label class="f">Conjunto Identificação<input data-f="cjId" oninput="render()"></label>
         <label class="f">País<select data-f="pais" id="fPais" onchange="render()"></select></label>
         <label class="f">Decisão<select data-f="decisao" onchange="render()">
-          <option value="">Todas</option><option>Pendente</option><option>Autorizado</option><option>Indeferido</option></select></label>
+          <option value="">Todas</option><option>Pendente</option><option>Autorizado</option><option>Indeferido</option><option>Concluído</option></select></label>
         <label class="f">Situação do processo<select data-f="sitDRP" onchange="render()">
           <option value="">Qualquer</option><option value="nao">Não enviado à DRP</option>
           <option value="na">Na DRP (sem envio à DRPM)</option><option value="parado">Parados na DRP (acima do limite)</option><option value="concl">Já enviado à DRPM</option>
@@ -535,7 +536,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <label class="f">Dt. envio DRPM<input type="date" name="dtDRPM" oninput="calcTempo()"></label>
      <label class="f">Tempo Exec. DRP<input id="tempo" readonly placeholder="—"><span class="hint" id="tempoHint"></span></label>
      <label class="f">Dt. processamento<input type="date" name="dtProc" oninput="calcTempo()"><span class="small">Envio para assinatura</span></label>
-     <label class="f">Dt. emissão<input type="date" name="dtEmissao" oninput="autoValidade();hintNAut();calcTempo()"><span class="small">Data de assinatura (autorização ou ofício)</span></label>
+     <label class="f">Dt. emissão<input type="date" name="dtEmissao" oninput="autoValidade();hintNAut();calcTempo()"><span class="small">Data de assinatura/despacho (autorização ou ofício)</span></label>
      <label class="f">Dt. envio ao requerente<input type="date" name="dtEnvio" oninput="calcTempo()"><span class="small">Envio da autorização / ofício</span></label>
      <label class="f">Até processamento<input id="tempoProc" readonly placeholder="—"><span class="small">Da Data Entrada à Dt. processamento (e sem o tempo na DRP)</span></label>
      <label class="f">Tempo total do processo<input id="tempoTot" readonly placeholder="—"><span class="small">Da Data Entrada ao envio ao requerente</span></label>
@@ -548,10 +549,15 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
      <label><input type="radio" name="decisao" value="Pendente" onchange="toggleDec()" checked><span class="d-pend">Pendente</span></label>
      <label><input type="radio" name="decisao" value="Autorizado" onchange="toggleDec()"><span class="d-ok">✔ Autorizado</span></label>
      <label><input type="radio" name="decisao" value="Indeferido" onchange="toggleDec()"><span class="d-bad">✖ Indeferido</span></label>
+     <label><input type="radio" name="decisao" value="Concluído" onchange="toggleDec()"><span class="d-neu">■ Concluído</span></label>
     </div>
     <div id="boxInd" class="hide" style="margin-top:12px">
      <label class="f">Justificação do indeferimento<textarea name="justificacao"></textarea></label>
      <p class="small" style="margin:8px 0 0">Não é emitida licença — apenas ofício a informar o indeferimento (assinado na <b>Dt. emissão</b> e enviado na <b>Dt. envio ao requerente</b>, na secção Instrução).</p>
+    </div>
+    <div id="boxConcl" class="hide" style="margin-top:12px">
+     <label class="f">Justificação da conclusão<textarea name="justConcl" placeholder="Ex.: desistência do requerente, pedido sem objeto, arquivamento por falta de elementos…"></textarea></label>
+     <p class="small" style="margin:8px 0 0">O processo fica encerrado sem autorização nem indeferimento.</p>
     </div>
     <div id="boxAut" class="hide" style="margin-top:12px">
      <div class="grid" style="margin-bottom:12px"><label class="f">N.º de Autorização
@@ -948,6 +954,7 @@ function calcTempo(){
 function toggleDec(){
   const v=$("#frm").decisao.value;
   $("#boxInd").classList.toggle("hide",v!=="Indeferido");
+  $("#boxConcl").classList.toggle("hide",v!=="Concluído");
   $("#boxAut").classList.toggle("hide",v!=="Autorizado");
   $("#boxEmi").classList.toggle("hide",v!=="Autorizado");
   if(v==="Autorizado")syncAut();
@@ -1192,7 +1199,7 @@ function marcarEtapas(novo,ant,origem){
   const et={...((ant&&ant.etapas)||{})},q={e:sess.email,n:sess.nome,t:Date.now()};
   if(!ant&&!et.registo)et.registo={...q,o:origem||"manual"};
   ["dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio"].forEach(k=>{if(novo[k]&&novo[k]!==(ant&&ant[k]))et[k]=q;if(!novo[k])delete et[k]});
-  if((novo.decisao==="Autorizado"||novo.decisao==="Indeferido")&&novo.decisao!==(ant&&ant.decisao))et.decisao={...q,d:novo.decisao};
+  if(["Autorizado","Indeferido","Concluído"].includes(novo.decisao)&&novo.decisao!==(ant&&ant.decisao))et.decisao={...q,d:novo.decisao};
   if(novo.decisao==="Pendente")delete et.decisao;
   const ed={...((ant&&ant.edicoes)||{})},k=chaveU(sess.email);ed[k]={e:sess.email,n:sess.nome,c:((ed[k]||{}).c||0)+1,t:Date.now()};
   novo.etapas=et;novo.edicoes=ed;return novo;
@@ -1202,7 +1209,7 @@ function proxDistrib(){
   dados.forEach(r=>{const m=/^(.+)\/(\d{4})\/(\d+)$/.exec(r.distribuicao||"");if(m&&+m[2]===ano){pref=m[1];max=Math.max(max,+m[3])}});
   return `${pref}/${ano}/${String(max+1).padStart(4,"0")}`;
 }
-const CAMPOS=["periodoIni","periodoFim","tipoPedido","adendaDe","distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","dtProc","dtEnvio","nAut","dtEmissao","validade","observacoes"];
+const CAMPOS=["periodoIni","periodoFim","tipoPedido","adendaDe","distribuicao","dataEntrada","nPedido","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","docOutro","dtDRP","dtDRPM","justificacao","justConcl","dtProc","dtEnvio","nAut","dtEmissao","validade","observacoes"];
 function preencher(r){
   const f=$("#frm");
   CAMPOS.forEach(k=>f[k].value=r[k]||"");
@@ -1304,6 +1311,7 @@ async function guardar(e){
   }
   const dec=f.decisao.value;
   if(dec==="Indeferido"&&!f.justificacao.value.trim()){alert("Indique a justificação do indeferimento.");f.justificacao.focus();return}
+  if(dec==="Concluído"&&!f.justConcl.value.trim()){alert("Indique a justificação da conclusão.");f.justConcl.focus();return}
   if(editId){
     const cur=dados.find(x=>x.id===editId);
     if(!cur&&!confirm("Este pedido foi enviado para a reciclagem por outro utilizador. Guardar estes dados (o pedido volta à lista)?"))return;
@@ -1334,7 +1342,7 @@ async function guardar(e){
     embarcacao:f.embarcacao.value.trim(),cjId:f.cjId.value.trim(),pais:f.pais.value.trim(),
     tipoReq:f.tipoReq.value,nif:f.nif.value.replace(/\s/g,""),morada:f.morada.value.trim(),email:f.email.value.trim(),telefone:f.telefone.value.trim(),representante:f.representante.value.trim(),
     pareceres:f.pareceres.value,docs:getChk("docs"),docOutro:getChk("docs").includes("Outro")?f.docOutro.value.trim():"",documentos:"",dtDRP:f.dtDRP.value,dtDRPM:f.dtDRPM.value,
-    decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",
+    decisao:dec,justificacao:dec==="Indeferido"?f.justificacao.value:"",justConcl:dec==="Concluído"?f.justConcl.value:"",
     solMap:solM,areasSol:resumoMap(solM).areas,artesSol:resumoMap(solM).artes,
     autMap:autM,areasAut:resumoMap(autM).areas,artesAut:resumoMap(autM).artes,
     periodoIni:f.periodoIni.value,periodoFim:f.periodoFim.value,
@@ -1357,7 +1365,7 @@ function apagar(){
 }
 function duplicar(){
   const r={...dados.find(x=>x.id===editId)};
-  ["nPedido","nAut","dtOficio","dtProc","dtEnvio","dtDRP","dtDRPM","justificacao","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
+  ["nPedido","nAut","dtOficio","dtProc","dtEnvio","dtDRP","dtDRPM","justificacao","justConcl","dtEmissao","validade","pareceres","documentos","docOutro","observacoes"].forEach(k=>r[k]="");r.docs=[];
   r.decisao="Pendente";r.solMap=mapa(r,"sol");r.autMap={};r.areasAut=[];r.artesAut=[];r.dataEntrada=hoje();
   fechar();setTimeout(()=>{abrir(null,r);toast("Cópia criada — reveja e guarde")},50);
 }
@@ -1476,7 +1484,7 @@ function render(){
   });
   $$("th[data-k]").forEach(th=>{th.classList.toggle("sorted",th.dataset.k===ordem.k);th.dataset.arrow=ordem.dir>0?"▲":"▼"});
 
-  const tag=d=>d==="Autorizado"?'<span class="tag t-ok">✔ Autorizado</span>':d==="Indeferido"?'<span class="tag t-bad">✖ Indeferido</span>':'<span class="tag t-pend">Pendente</span>';
+  const tag=d=>d==="Autorizado"?'<span class="tag t-ok">✔ Autorizado</span>':d==="Indeferido"?'<span class="tag t-bad">✖ Indeferido</span>':d==="Concluído"?'<span class="tag t-neu">■ Concluído</span>':'<span class="tag t-pend">Pendente</span>';
   const valTag=r=>{if(!r.validade)return"";const e=estadoValidade(r);
     return fmt(r.validade)+(e==="expirado"?' <span class="tag t-bad">Expirado</span>':e==="expira"?' <span class="tag t-pend">A expirar</span>':"")};
   const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
@@ -1563,6 +1571,7 @@ const QUAL=[
   ["semNAut","Autorizado sem N.º de Autorização",r=>r.decisao==="Autorizado"&&!ehAdenda(r)&&!r.nAut],
   ["semValidade","Autorizado sem validade",r=>r.decisao==="Autorizado"&&!r.validade],
   ["semJust","Indeferido sem justificação",r=>r.decisao==="Indeferido"&&!r.justificacao],
+  ["semJustC","Concluído sem justificação",r=>r.decisao==="Concluído"&&!r.justConcl],
   ["dup","Possíveis duplicados",r=>dupSet().has(r.id)],
   ["sob","Áreas/artes em comum com período sobreposto",r=>sobSet().has(r.id)]];
 function eixoMeses(datas){
@@ -1620,13 +1629,13 @@ function topHTML(lst,campo,rot){
 function anosHTML(lst){
   const anos=[...new Set(lst.map(r=>(r.dataEntrada||"").slice(0,4)).filter(Boolean))].sort();
   const L=anos.map(a=>{const l=lst.filter(r=>(r.dataEntrada||"").startsWith(a)),d=decididos(l),T=l.map(temposDe);
-    return {a,n:l.length,au:l.filter(r=>r.decisao==="Autorizado").length,ind:l.filter(r=>r.decisao==="Indeferido").length,pe:l.filter(r=>(r.decisao||"Pendente")==="Pendente").length,
+    return {a,n:l.length,au:l.filter(r=>r.decisao==="Autorizado").length,ind:l.filter(r=>r.decisao==="Indeferido").length,co:l.filter(r=>r.decisao==="Concluído").length,pe:l.filter(r=>(r.decisao||"Pendente")==="Pendente").length,
       ad:l.filter(ehAdenda).length,tx:pct(d.filter(r=>r.decisao==="Autorizado").length,d.length),tp:media(T.map(t=>t.proc)),ts:media(T.map(t=>t.semDrp)),te:media(T.map(t=>t.env))}});
   const v=(cur,prev,inv)=>{if(cur==null||prev==null||!prev)return "";const d=Math.round((cur-prev)/prev*100);if(!d)return ' <span class="small">=</span>';
     const mau=inv?d>0:d<0;return ` <span class="small ${mau?"up":"down"}">${d>0?"▲":"▼"}${Math.abs(d)}%</span>`};
-  return `<div class="gwrap"><table class="gtab"><thead><tr><th>Ano de entrada</th><th class="n">Pedidos</th><th class="n">Autorizados</th><th class="n">Indeferidos</th><th class="n">Pendentes</th><th class="n">Adendas</th><th class="n">Taxa autoriz.</th><th class="n">Média até proc.</th><th class="n">Média s/ DRP</th><th class="n">Média até envio</th></tr></thead><tbody>${
-    L.map((x,i)=>{const p=L[i-1]||{};return `<tr><td><b>${x.a}</b></td><td class="n">${x.n}${v(x.n,p.n)}</td><td class="n">${x.au}</td><td class="n">${x.ind}</td><td class="n">${x.pe}</td><td class="n">${x.ad}</td><td class="n">${x.tx==null?"—":x.tx+"%"}</td>
-      <td class="n">${fmtN(x.tp)}${v(x.tp,p.tp,true)}</td><td class="n">${fmtN(x.ts)}${v(x.ts,p.ts,true)}</td><td class="n">${fmtN(x.te)}${v(x.te,p.te,true)}</td></tr>`}).join("")||'<tr><td colspan="10" class="empty">Sem dados.</td></tr>'}</tbody></table></div>
+  return `<div class="gwrap"><table class="gtab"><thead><tr><th>Ano de entrada</th><th class="n">Pedidos</th><th class="n">Autorizados</th><th class="n">Indeferidos</th><th class="n">Concluídos</th><th class="n">Pendentes</th><th class="n">Adendas</th><th class="n">Taxa autoriz.</th><th class="n">Média até proc.</th><th class="n">Média s/ DRP</th><th class="n">Média até envio</th></tr></thead><tbody>${
+    L.map((x,i)=>{const p=L[i-1]||{};return `<tr><td><b>${x.a}</b></td><td class="n">${x.n}${v(x.n,p.n)}</td><td class="n">${x.au}</td><td class="n">${x.ind}</td><td class="n">${x.co}</td><td class="n">${x.pe}</td><td class="n">${x.ad}</td><td class="n">${x.tx==null?"—":x.tx+"%"}</td>
+      <td class="n">${fmtN(x.tp)}${v(x.tp,p.tp,true)}</td><td class="n">${fmtN(x.ts)}${v(x.ts,p.ts,true)}</td><td class="n">${fmtN(x.te)}${v(x.te,p.te,true)}</td></tr>`}).join("")||'<tr><td colspan="11" class="empty">Sem dados.</td></tr>'}</tbody></table></div>
    <p class="small" style="margin:6px 0 0">Variação face ao ano anterior. Nos tempos, ▲ a vermelho significa que demorou mais; ▼ a verde, menos.</p>`;
 }
 function statsHTML(lst){
@@ -1640,6 +1649,7 @@ function statsHTML(lst){
     <div class="stat"><b style="color:var(--warn)">${n("Pendente")}</b><span>Pendentes</span></div>
     <div class="stat"><b style="color:var(--ok)">${n("Autorizado")}</b><span>✔ Autorizados</span></div>
     <div class="stat"><b style="color:var(--bad)">${n("Indeferido")}</b><span>✖ Indeferidos</span></div>
+    <div class="stat"><b style="color:var(--neu)">${n("Concluído")}</b><span>■ Concluídos</span></div>
     <div class="stat"><b>${taxa}</b><span>Taxa de autorização</span></div>
     <div class="stat"><b>${media}</b><span>Tempo médio na DRP</span></div>
     <div class="stat"><b>${naDRP}</b><span>Atualmente na DRP</span></div>
@@ -1699,10 +1709,10 @@ function renderCharts(){
     const perCount=P.keys.map(k=>lst.filter(r=>(r.dataEntrada||"").startsWith(k)).length);
     const lstR=lst.map(r=>{const s=resumoMap(mapa(r,"sol")),a=resumoMap(mapa(r,"aut"));return {areasSol:s.areas,artesSol:s.artes,areasAut:a.areas,artesAut:a.artes}});
     const aS=contar(lstR,"areasSol",AREAS),aA=contar(lstR,"areasAut",AREAS),tS=contar(lstR,"artesSol",ARTES),tA=contar(lstR,"artesAut",ARTES);
-    const dec=["Pendente","Autorizado","Indeferido"].map(d=>lst.filter(r=>(r.decisao||"Pendente")===d).length);
+    const dec=["Pendente","Autorizado","Indeferido","Concluído"].map(d=>lst.filter(r=>(r.decisao||"Pendente")===d).length);
     S("geral",[],[
       {id:"c1",tit:`Pedidos entrados por ${per}`,sub:"Data Entrada",labels:P.labels,ds:[{label:"Pedidos",data:perCount,color:S1}],click:i=>aplicarFiltro(P.modo,P.keys[i])},
-      {id:"c2",tit:"Decisão",sub:"N.º de pedidos",horiz:true,labels:["Pendente","✔ Autorizado","✖ Indeferido"],ds:[{label:"Pedidos",data:dec,color:[warn,ok,bad]}],click:i=>aplicarFiltro("decisao",["Pendente","Autorizado","Indeferido"][i])},
+      {id:"c2",tit:"Decisão",sub:"N.º de pedidos",horiz:true,labels:["Pendente","✔ Autorizado","✖ Indeferido","■ Concluído"],ds:[{label:"Pedidos",data:dec,color:[warn,ok,bad,css("--neu")]}],click:i=>aplicarFiltro("decisao",["Pendente","Autorizado","Indeferido","Concluído"][i])},
       {id:"c3",tit:"Áreas: solicitadas vs autorizadas",sub:"N.º de pedidos",labels:AREAS,ds:[{label:"Solicitadas",data:AREAS.map(a=>aS[a]),color:S1},{label:"Autorizadas",data:AREAS.map(a=>aA[a]),color:S2}],click:(i,d)=>aplicarFiltro(d===0?"areaSol":"areaAut",AREAS[i])},
       {id:"c4",tit:"Artes: solicitadas vs autorizadas",sub:"N.º de pedidos",horiz:true,labels:ARTES.map(nomeArte),ds:[{label:"Solicitadas",data:ARTES.map(a=>tS[a]),color:S1},{label:"Autorizadas",data:ARTES.map(a=>tA[a]),color:S2}],click:(i,d)=>aplicarFiltro(d===0?"arteSol":"arteAut",ARTES[i])}]);
   }
@@ -1797,7 +1807,7 @@ function renderCharts(){
       if((r.validade||"")!==(o.validade||""))mV++;if(norm(r.embarcacao)!==norm(o.embarcacao)||normCod(r.cjId)!==normCod(o.cjId)||norm(r.titular)!==norm(o.titular))mE++});
     const Ta=ads.map(temposDe);
     S("validade",[`<div class="gblk"><h3>Autorizações</h3>${tiles([[vig.length,"Em vigor hoje","--ok"],[exp(30),"Expiram em 30 dias","--bad"],[exp(60),"Expiram em 60 dias","--warn"],[exp(90),"Expiram em 90 dias"],[expAno,`Expiradas em ${HOJE.slice(0,4)}`]])}</div>`,
-      `<div class="gblk"><h3>Adendas</h3>${tiles([[ads.length,"Adendas"],[adA.length,"Autorizadas","--ok"],[ads.filter(r=>r.decisao==="Indeferido").length,"Indeferidas","--bad"],[ads.filter(r=>(r.decisao||"Pendente")==="Pendente").length,"Pendentes","--warn"]])}
+      `<div class="gblk"><h3>Adendas</h3>${tiles([[ads.length,"Adendas"],[adA.length,"Autorizadas","--ok"],[ads.filter(r=>r.decisao==="Indeferido").length,"Indeferidas","--bad"],[ads.filter(r=>r.decisao==="Concluído").length,"Concluídas","--neu"],[ads.filter(r=>(r.decisao||"Pendente")==="Pendente").length,"Pendentes","--warn"]])}
        <h3 style="margin-top:12px">O que mudaram (adendas autorizadas)</h3>${tiles([[mA,"Áreas/artes"],[mV,"Validade"],[mE,"Embarcação ou titular"]])}
        <h3 style="margin-top:12px">Tramitação das adendas (dias)</h3>${tiles([[fmtN(media(Ta.map(t=>t.proc))),"Média até processamento"],[fmtN(media(Ta.map(t=>t.semDrp))),"Média sem DRP"],[fmtN(media(Ta.map(t=>t.env))),"Média até envio"]])}</div>`],[
       {id:"c17",tit:"Autorizações que expiram nos próximos 12 meses",sub:"N.º de autorizações em vigor por mês de fim da validade",labels:meses.map(x=>x[1]),ds:[{label:"Expiram",data:meses.map(([k])=>vig.filter(r=>fimDe(r).startsWith(k)).length),color:S2}]}]);
@@ -1847,6 +1857,7 @@ function renderCharts(){
       {id:"c18",tit:"Pedidos por ano de entrada e decisão",sub:"N.º de pedidos",labels:anos,
         ds:[{label:"Autorizados",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&r.decisao==="Autorizado").length),color:ok},
             {label:"Indeferidos",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&r.decisao==="Indeferido").length),color:bad},
+            {label:"Concluídos",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&r.decisao==="Concluído").length),color:css("--neu")},
             {label:"Pendentes",data:anos.map(a=>lst.filter(r=>(r.dataEntrada||"").startsWith(a)&&(r.decisao||"Pendente")==="Pendente").length),color:warn}],click:i=>aplicarFiltro("ano",anos[i])}]);
   }
 
@@ -1998,7 +2009,7 @@ function imprimir(){
    <h3>Instrução</h3><table>${row("Pareceres",nl(r.pareceres))}${row("Documentos",esc(docsTxt(r)||r.documentos||""))}
     ${row("Dt. envio DRP",fmt(r.dtDRP))}${row("Dt. envio DRPM",fmt(r.dtDRPM))}${row("Tempo Exec. DRP",t===null?"":t+" dias")}${row("Dt. processamento (envio p/ assinatura)",fmt(r.dtProc))}${row(r.decisao==="Indeferido"?"Dt. emissão (assinatura do ofício)":"Dt. emissão (assinatura)",fmt(dtAss(r)))}${row("Dt. envio ao requerente",fmt(r.dtEnvio))}${(t=>(t.proc!==null?row("Até processamento",t.proc+" dias"+(t.semDrp!==null&&t.semDrp!==t.proc?` (${t.semDrp} sem o tempo na DRP)`:"")):"")+(t.env!==null?row("Tempo total do processo",t.env+" dias"):""))(temposDe(r))}</table>
    <h3>Decisão</h3><table>${ehAdenda(r)?row("Tipo de pedido","Adenda à autorização n.º "+esc(r.adendaDe)):""}${row("Decisão",esc(r.decisao))}${r.decisao==="Autorizado"?row("N.º de Autorização",esc(r.nAut)):""}
-    ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}
+    ${r.decisao==="Indeferido"?row("Justificação",nl(r.justificacao)):""}${r.decisao==="Concluído"?row("Justificação da conclusão",nl(r.justConcl)):""}
     ${r.decisao==="Autorizado"?row("Áreas e artes autorizadas",esc(txtMap(mapa(r,"aut"),"\n",nomeArte)).replace(/\n/g,"<br>")):""}
     ${r.decisao==="Autorizado"?row("Validade",fmt(r.validade)):""}</table>
    <h3>Observações</h3><table>${row("Observações",nl(r.observacoes))}</table></div>`;
@@ -2016,7 +2027,7 @@ const COLS_X=[ // ordem das colunas no Excel exportado / modelo
  ["distribuicao","Distribuição"],["dataEntrada","Data Entrada"],["nPedido","N.º Pedido"],["titular","Nome do Titular"],["tipoReq","Tipologia do Requerente"],["nif","NIF"],["morada","Morada"],["email","Email"],["telefone","Telefone"],["representante","Representante"],["embarcacao","Embarcação"],
  ["cjId","Conjunto Identificação"],["pais","País"],["documentos","Documentos"],["solMap","Solicitado (área: artes)"],["periodoIni","Período Pedido Início"],["periodoFim","Período Pedido Fim"],["pareceres","Pareceres"],
  ["dtDRP","Dt. envio DRP"],["dtDRPM","Dt. envio DRPM"],["tempo","Tempo Exec. DRP (dias)"],["decisao","Decisão"],["tipoPedido","Tipo de Pedido"],["adendaDe","Adenda à Autorização"],["nAut","N.º Autorização"],
- ["justificacao","Justificação Indeferimento"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["tProc","Dias até Processamento"],["tSemDrp","Dias até Processamento sem DRP"],["tEnv","Dias até Envio"],["validade","Validade"],
+ ["justificacao","Justificação Indeferimento"],["justConcl","Justificação Conclusão"],["autMap","Autorizado (área: artes)"],["dtProc","Dt. Processamento"],["dtEmissao","Dt Emissão"],["dtEnvio","Dt. Envio ao Requerente"],["tProc","Dias até Processamento"],["tSemDrp","Dias até Processamento sem DRP"],["tEnv","Dias até Envio"],["validade","Validade"],
  ["observacoes","Observações"],["criadoPor","Registado por"],["alteradoPor","Última alteração por"]];
 const nrm=t=>String(t??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const SINON={
@@ -2049,6 +2060,7 @@ const SINON={
  dtProc:["dt processamento","data processamento","data de processamento","dt envio para assinatura","envio para assinatura","data envio assinatura"],
  dtEnvio:["dt envio ao requerente","data envio ao requerente","dt envio requerente","envio ao requerente","data de envio","dt envio","envio"],
  dtOficio:["dt oficio indeferimento","dt oficio","data oficio","data do oficio","data oficio indeferimento"],
+ justConcl:["justificacao conclusao","justificacao da conclusao","motivo conclusao","motivo arquivamento"],
  justificacao:["justificacao indeferimento","justificacao","motivo indeferimento","justificacao do indeferimento","fundamento"],
  areasAut:["areas autorizadas","area autorizada","areas aut"],
  artesAut:["artes autorizadas","arte autorizada","artes aut"],
@@ -2102,7 +2114,7 @@ function docsX(v){
   });
   return {docs:DOCS.map(d=>d[0]).filter(d=>docs.includes(d)),docOutro:outro};
 }
-function decisaoX(v){const k=nrm(v);if(!k)return "Pendente";if(/^autoriz|^deferid|^aprovad/.test(k))return "Autorizado";if(/indefer|recusad|rejeitad/.test(k))return "Indeferido";if(/pendent|em analise|analise/.test(k))return "Pendente";return null}
+function decisaoX(v){const k=nrm(v);if(!k)return "Pendente";if(/^autoriz|^deferid|^aprovad/.test(k))return "Autorizado";if(/indefer|recusad|rejeitad/.test(k))return "Indeferido";if(/conclu|arquivad|desist|encerrad|sem objeto/.test(k))return "Concluído";if(/pendent|em analise|analise/.test(k))return "Pendente";return null}
 
 // aoa = linhas do Excel (array de arrays)
 function interpretarExcel(aoa){
@@ -2117,7 +2129,7 @@ function interpretarExcel(aoa){
     const txt=k=>String(g(k)).trim();
     if(!L.some(c=>String(c??"").trim()))continue;
     const av=[],r={};
-    ["distribuicao","nPedido","tipoPedido","adendaDe","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
+    ["distribuicao","nPedido","tipoPedido","adendaDe","titular","tipoReq","nif","morada","email","telefone","representante","embarcacao","cjId","pais","pareceres","nAut","justificacao","justConcl","observacoes"].forEach(k=>{if(mapa[k]!==undefined)r[k]=txt(k)});
     ["dataEntrada","periodoIni","periodoFim","dtDRP","dtDRPM","dtProc","dtEmissao","dtEnvio","validade","dtOficio"].forEach(k=>{if(mapa[k]===undefined)return;const d=dataX(g(k));r[k]=d.v;if(d.erro)av.push(d.erro)});
     if(mapa.solMap!==undefined&&txt("solMap"))r.solMap=mapaX(g("solMap"),av,"Solicitado");
     else if(mapa.areasSol!==undefined)r.solMap=mapaAreasArtes(g("areasSol"),g("artesSol"),av,"Solicitado");
@@ -2215,6 +2227,7 @@ async function confirmarImp(){
       if(doc.decisao!=="Autorizado"){doc.autMap={};doc.nAut=""}
       doc.tipoPedido=doc.tipoPedido||"Novo";if(doc.tipoPedido==="Adenda")doc.nAut="";
       if(doc.decisao!=="Indeferido")doc.justificacao="";
+      if(doc.decisao!=="Concluído")doc.justConcl="";
       if(doc.decisao!=="Autorizado")doc.validade="";
       if(!doc.dtEmissao&&doc.dtOficio)doc.dtEmissao=doc.dtOficio;doc.dtOficio="";
       const s1=resumo(doc.solMap||{}),s2=resumo(doc.autMap||{});
@@ -2231,7 +2244,7 @@ function linhaExcel(r){
   const t=dias(r.dtDRP,r.dtDRPM);
   return {distribuicao:r.distribuicao,dataEntrada:fmt(r.dataEntrada),nPedido:r.nPedido,titular:r.titular,tipoReq:r.tipoReq||"",nif:r.nif||"",morada:r.morada||"",email:r.email||"",telefone:r.telefone||"",representante:r.representante||"",embarcacao:r.embarcacao,cjId:r.cjId,pais:r.pais,
     documentos:docsTxt(r)||r.documentos||"",solMap:txtMap(mapa(r,"sol"),"; ",nomeArte),periodoIni:fmt(r.periodoIni),periodoFim:fmt(r.periodoFim),pareceres:r.pareceres,dtDRP:fmt(r.dtDRP),dtDRPM:fmt(r.dtDRPM),
-    tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),...(t=>({tProc:t.proc??"",tSemDrp:t.semDrp??"",tEnv:t.env??""}))(temposDe(r)),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
+    tempo:t??"",decisao:r.decisao||"Pendente",tipoPedido:ehAdenda(r)?"Adenda":"Novo",adendaDe:r.adendaDe||"",nAut:r.nAut||"",justificacao:r.justificacao||"",justConcl:r.justConcl||"",dtProc:fmt(r.dtProc),dtEnvio:fmt(r.dtEnvio),...(t=>({tProc:t.proc??"",tSemDrp:t.semDrp??"",tEnv:t.env??""}))(temposDe(r)),autMap:txtMap(mapa(r,"aut"),"; ",nomeArte),
     dtEmissao:fmt(dtAss(r)),validade:r.decisao==="Autorizado"?fmt(r.validade):"",observacoes:r.observacoes||"",criadoPor:r.criadoPor||"",alteradoPor:r.alteradoPor||""};
 }
 function folhaXLSX(linhas){
@@ -2262,7 +2275,7 @@ async function modeloExcel(){
     ["Autorizado (área: artes)","Igual ao solicitado; só para pedidos Autorizados."],
     ["Áreas",AREAS.join(", ")+" (também aceita PMA17, 12A…)"],
     ["Artes",ARTES.map(t=>`${abr(t)} = ${nomeArte(t)}`).join("; ")],
-    ["Decisão","Pendente, Autorizado ou Indeferido (vazio = Pendente)."],
+    ["Decisão","Pendente, Autorizado, Indeferido ou Concluído (vazio = Pendente). Concluído exige a Justificação Conclusão."],
     ["Dt. Processamento","Data de envio para assinatura."],
     ["Dt Emissão","Data de assinatura — da autorização ou, nos indeferidos, do ofício."],
     ["Dt. Envio ao Requerente","Data de envio da autorização / ofício ao requerente."],
@@ -2406,10 +2419,10 @@ async function importarPdf(f){
 
 function exportCSV(){
   const lst=filtrar();if(!lst.length){toast("Nada para exportar");return}
-  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Período Pedido Início","Período Pedido Fim","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
+  const cab=["Distribuição","Data Entrada","N.º Pedido","Nome do Titular","Tipologia do Requerente","NIF","Morada","Email","Telefone","Representante","Embarcação","Conjunto Identificação","País","Áreas Solicitadas","Artes Solicitadas","Solicitado (área: artes)","Período Pedido Início","Período Pedido Fim","Pareceres","Documentos","Dt. envio DRP","Dt. envio DRPM","Tempo Exec. DRP (dias)","Decisão","Tipo de Pedido","Adenda à Autorização","N.º Autorização","Justificação Indeferimento","Justificação Conclusão","Áreas Autorizadas","Artes Autorizadas","Autorizado (área: artes)","Dt. Processamento","Dt Emissão","Dt. Envio ao Requerente","Validade","Observações","Registado por","Última alteração por"];
   const c=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const linhas=lst.map(r=>[r.distribuicao,fmt(r.dataEntrada),r.nPedido,r.titular,r.tipoReq,r.nif,r.morada,r.email,r.telefone,r.representante,r.embarcacao,r.cjId,r.pais,resumoMap(mapa(r,"sol")).areas.join(", "),resumoMap(mapa(r,"sol")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"sol"),"; ",nomeArte),fmt(r.periodoIni),fmt(r.periodoFim),
-    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
+    r.pareceres,docsTxt(r)||r.documentos||"",fmt(r.dtDRP),fmt(r.dtDRPM),dias(r.dtDRP,r.dtDRPM)??"",r.decisao,ehAdenda(r)?"Adenda":"Novo",r.adendaDe||"",r.nAut,r.justificacao,r.justConcl,resumoMap(mapa(r,"aut")).areas.join(", "),resumoMap(mapa(r,"aut")).artes.map(nomeArte).join(", "),txtMap(mapa(r,"aut"),"; ",nomeArte),
     fmt(r.dtProc),fmt(dtAss(r)),fmt(r.dtEnvio),r.decisao==="Autorizado"?fmt(r.validade):"",r.observacoes,r.criadoPor,r.alteradoPor].map(c).join(";"));
   baixar("﻿"+[cab.map(c).join(";"),...linhas].join("\r\n"),`Rampa-P_${hoje()}.csv`,"text/csv;charset=utf-8");
 }
