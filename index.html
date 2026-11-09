@@ -213,6 +213,9 @@ body.drag-pdf::after{content:"Largue o PDF para criar o pedido";position:fixed;i
   .pf .stat b{display:block;font-size:15px}
   .pf .charts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pf .ch{page-break-inside:avoid;border:1px solid #ccc;padding:6px}
   .pf .ch h3{font-size:11px;margin:0 0 4px}.pf .ch img{width:100%;height:auto}.pf .ch-h .small{display:none}}
+.presbox{background:var(--pri2);border:1px solid var(--pri);color:var(--ink);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.presbox b{color:var(--pri)}
+.presmark{color:var(--pri);cursor:help;margin-right:4px}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2733;color:#fff;padding:10px 18px;border-radius:8px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
 #toast.show{opacity:1}
 #printArea{display:none}
@@ -476,6 +479,7 @@ const ADMINS_FIXOS = ["nuno.mm.prazeres@azores.gov.pt"];
  <div class="dlg">
   <div class="dlg-h"><h2 id="mTitle">Novo pedido</h2><button onclick="fechar()">✕</button></div>
   <form class="dlg-b" id="frm" onsubmit="guardar(event)" oninput="atualizarDup()" onchange="atualizarDup()">
+   <div class="presbox hide" id="presBox"></div>
    <div class="pdfbox hide" id="pdfBox"></div>
    <div class="dup hide" id="dupBox"></div>
    <div class="rel hide" id="relBox"></div>
@@ -816,14 +820,14 @@ function ouvirConfig(){
     if(r!=="admin"&&!$("#utilizadores").classList.contains("hide"))tab("lista");
   },err=>{console.error(err);if(err.code==="permission-denied")semAcesso();else ecraMsg("Erro de ligação",esc(err.message),[["Tentar de novo",()=>location.reload(),true],["Sair",()=>auth.signOut()]])});
 }
-function desligar(){if(unsub)unsub();if(unsubCfg)unsubCfg();if(unsubCnt){unsubCnt();unsubCnt=null}unsub=unsubCfg=null;col=null;todos=dados=lixo=[];primeiraCarga=true;document.body.classList.remove("role-admin","role-utilizador","role-consulta")}
+function desligar(){libertarPresenca();if(unsubPres){unsubPres();unsubPres=null}presenca=[];if(unsub)unsub();if(unsubCfg)unsubCfg();if(unsubCnt){unsubCnt();unsubCnt=null}unsub=unsubCfg=null;col=null;todos=dados=lixo=[];primeiraCarga=true;document.body.classList.remove("role-admin","role-utilizador","role-consulta")}
 function sair(){if(!confirm("Terminar a sessão neste computador?"))return;auth.signOut()}
 
 let _purgado=false;
 function ligar(){
   gate(null);
   col=db.collection(COLECAO);
-  ouvirContador();
+  ouvirContador();ouvirPresenca();
   unsub=col.onSnapshot({includeMetadataChanges:true},snap=>{
     todos=snap.docs.map(d=>({...d.data(),id:d.id}));
     dados=todos.filter(r=>!r.apagado);lixo=todos.filter(r=>r.apagado);
@@ -1234,6 +1238,7 @@ function abrir(id,base){
   ["bDel","bDup","bPrint"].forEach(b=>$("#"+b).classList.toggle("hide",!id));
   $("#bAd").classList.toggle("hide",!(id&&r&&!ehAdenda(r)&&r.decisao==="Autorizado"&&r.nAut));
   const ro=sess.role==="consulta";$$("#frm fieldset").forEach(fs=>fs.disabled=ro);
+  if(id){ocuparPresenca(id);const ed=editoresDe(id);if(ed.length)toast(`✎ ${ed.map(x=>x.n||x.e).join(", ")} ${ed.length>1?"estão":"está"} a editar este pedido`)}else libertarPresenca();
   $("#bOf").classList.toggle("hide",!id||!r||!["Autorizado","Indeferido"].includes(r.decisao));
   if(r){preencher(r);if(id)editBase=r.alterado||0}
   else{f.dataEntrada.value=hoje();f.decisao.value="Pendente";setMx("mxSol",{});setMx("mxAut",{})}
@@ -1242,7 +1247,7 @@ function abrir(id,base){
   $("#dupBox").classList.add("hide");
   if(!f.tipoPedido.value)f.tipoPedido.value="Novo";
   $("#boxAdDe").classList.toggle("hide",f.tipoPedido.value!=="Adenda");infoOriginal();listaAdendas(id?r:null);
-  calcTempo();toggleDec();syncAut();docsChange();validarNif();hintNAut();checkPeriodo();
+  calcTempo();toggleDec();syncAut();docsChange();validarNif();hintNAut();checkPeriodo();mostrarPresenca();
   $("#modal").classList.add("open");atualizarDup();
   if(!$("#dupBox").classList.contains("hide"))toast("⚠ Este pedido tem possível duplicação de informação");
 }
@@ -1283,7 +1288,45 @@ function zoomBtn(f){const v=$("#mapView");zoomAt(f,v.clientWidth/2,v.clientHeigh
   v.addEventListener("pointerup",fim);v.addEventListener("pointercancel",fim);
   addEventListener("resize",()=>{if($("#mMapa").classList.contains("open"))zoomReset()});
 })();
-function fechar(){$("#modal").classList.remove("open");editId=null}
+function fechar(){$("#modal").classList.remove("open");libertarPresenca();editId=null}
+
+/* ================= QUEM ESTÁ A EDITAR ================= */
+const PRES_COL="rampap_presenca",PRES_HB=30000,PRES_VAL=90000;
+let presenca=[],unsubPres=null,presTimer=null,presId=null;
+const presDocId=pid=>pid+"__"+chaveU(sess.email);
+function ouvirPresenca(){
+  if(unsubPres)unsubPres();
+  unsubPres=db.collection(PRES_COL).onSnapshot(sn=>{
+    presenca=sn.docs.map(d=>({...d.data(),_id:d.id}));
+    mostrarPresenca();render();
+    if(sess.role==="admin")presenca.filter(x=>Date.now()-(x.t||0)>3600000).forEach(x=>db.collection(PRES_COL).doc(x._id).delete().catch(()=>{}));
+  },()=>{});
+}
+// outras pessoas com o pedido aberto (exclui o próprio e registos antigos)
+const editoresDe=pid=>presenca.filter(x=>x.pid===pid&&x.e!==sess.email&&Date.now()-(x.t||0)<PRES_VAL);
+function ocuparPresenca(pid){
+  libertarPresenca();
+  if(!pid||sess.role==="consulta")return;
+  presId=presDocId(pid);const ref=db.collection(PRES_COL).doc(presId),desde=Date.now();
+  const bater=()=>ref.set({pid,e:sess.email,n:sess.nome,desde,t:Date.now()}).catch(()=>{});
+  bater();presTimer=setInterval(bater,PRES_HB);
+}
+function libertarPresenca(){
+  if(presTimer){clearInterval(presTimer);presTimer=null}
+  if(presId){db.collection(PRES_COL).doc(presId).delete().catch(()=>{});presId=null}
+}
+function mostrarPresenca(){
+  const b=$("#presBox");if(!b)return;
+  if(!editId||!$("#modal").classList.contains("open")){b.classList.add("hide");return}
+  const ed=editoresDe(editId);
+  if(!ed.length){b.classList.add("hide");return}
+  b.innerHTML=`✎ ${ed.map(x=>`<b>${esc(x.n||x.e)}</b> está a editar este pedido desde as ${new Date(x.desde||x.t).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})}`).join("<br>✎ ")}.
+    <span class="small">Combine com ${ed.length>1?"essas pessoas":"essa pessoa"} antes de gravar alterações, para não se sobreporem.</span>`;
+  b.classList.remove("hide");
+}
+setInterval(()=>{if(col)mostrarPresenca()},20000);
+addEventListener("pagehide",libertarPresenca);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&presId&&editId)ocuparPresenca(editId)});
 
 // Aviso se outro utilizador alterar/apagar o pedido que está a ser editado
 function verificarConflito(){
@@ -1489,7 +1532,7 @@ function render(){
     return fmt(r.validade)+(e==="expirado"?' <span class="tag t-bad">Expirado</span>':e==="expira"?' <span class="tag t-pend">A expirar</span>':"")};
   const tempoTxt=r=>{const t=dias(r.dtDRP,r.dtDRPM);if(t!==null)return t+" d";if(r.dtDRP)return `<span class="${parado(r)?"late":"small"}" ${parado(r)?'title="Acima do limite de dias na DRP"':""}>${parado(r)?"⏰ ":""}na DRP (${dias(r.dtDRP,hoje())} d)</span>`;return""};
   $("#tb").innerHTML=lst.length?lst.map(r=>`<tr onclick="abrir('${r.id}')">
-    <td>${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
+    <td>${(e=>e.length?`<span class="presmark" title="Em edição por ${esc(e.map(x=>x.n||x.e).join(", "))}">✎</span>`:"")(editoresDe(r.id))}${dupSet().has(r.id)?'<span class="dupmark" title="Possível duplicado (distribuição, n.º pedido ou embarcação+data iguais a outro pedido)">⚠</span>':""}<b>${esc(r.distribuicao)}</b></td><td>${fmt(r.dataEntrada)}</td><td>${esc(r.nPedido)}</td><td>${esc(r.titular)}</td>
     <td>${esc(r.embarcacao)}</td><td>${esc(r.cjId)}</td><td>${esc(r.pais)}</td><td>${htmlMap(mapa(r,"sol"))}${r.periodoIni||r.periodoFim?`<div class="small">📅 ${fmt(r.periodoIni)||"…"} a ${fmt(r.periodoFim)||"…"}</div>`:""}</td>
     <td>${docsCel(r)}</td><td>${tempoTxt(r)}</td><td>${tag(r.decisao)}${ehAdenda(r)?`<div><span class="tag t-ad">Adenda à ${esc(r.adendaDe)}</span></div>`:r.decisao==="Autorizado"&&r.nAut?`<div class="small">N.º ${esc(r.nAut)}${adendasDe(r).length?` · <b>${adendasDe(r).length} adenda${adendasDe(r).length>1?"s":""}</b>`:""}</div>`:""}</td><td>${dtEmiCel(r)}</td><td>${r.decisao==="Autorizado"?valTag(vigente(r)):""}</td></tr>`).join("")
     :`<tr><td colspan="13" class="empty">${primeiraCarga?"A carregar…":dados.length?"Nenhum pedido corresponde à pesquisa.":"Ainda não há pedidos. Clique em “+ Novo pedido”."}</td></tr>`;
